@@ -1,8 +1,6 @@
-use anyhow::Result;
-
 use super::*;
 
-mod veth;
+pub mod veth;
 
 #[allow(unused)]
 pub trait NetDev {
@@ -10,8 +8,19 @@ pub trait NetDev {
     fn recv(&mut self, buf: &mut [u8]) -> Result<usize>;
 }
 
+#[derive(Debug)]
 pub struct NetStats {
     rx_packets: u64,
     rx_bytes: u64,
     rx_errors: u64,
+}
+
+impl NetStats {
+    fn default() -> Self {
+        Self {
+            rx_packets: 0,
+            rx_bytes: 0,
+            rx_errors: 0,
+        }
+    }
 }
