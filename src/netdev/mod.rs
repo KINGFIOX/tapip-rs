@@ -1,13 +1,17 @@
-use std::rc::Rc;
+use anyhow::Result;
 
 use super::*;
-use anyhow::{Context, Result};
 
 mod veth;
 
 #[allow(unused)]
 pub trait NetDev {
-    fn xmit(&self, buf: &[u8]) -> Result<usize>;
-    fn recv(&self, buf: &mut [u8]) -> Result<usize>;
-    fn new(path: &str) -> Result<Rc<Self>>;
+    fn xmit(&mut self, buf: &[u8]) -> Result<usize>;
+    fn recv(&mut self, buf: &mut [u8]) -> Result<usize>;
+}
+
+pub struct NetStats {
+    rx_packets: u64,
+    rx_bytes: u64,
+    rx_errors: u64,
 }
