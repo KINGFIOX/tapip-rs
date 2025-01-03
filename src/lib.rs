@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
 
 pub mod netdev;
+
+mod net;
 mod pkbuf;
 mod utils;
 

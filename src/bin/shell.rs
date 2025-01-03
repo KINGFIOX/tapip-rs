@@ -1,6 +1,7 @@
-use tapip_rs::netdev::veth::TapDev;
+use std::io;
+use tapip_rs::netdev::veth::veth_poll;
 
-fn main() {
-    let dev = TapDev::new("tap0\0");
-    println!("dev: {:?}", dev);
+fn main() -> io::Result<()> {
+    veth_poll();
+    Ok(())
 }

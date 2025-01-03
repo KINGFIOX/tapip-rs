@@ -1,111 +1,94 @@
 use super::*;
 use lazy_static::lazy_static;
-use libc::*;
-use log::{error, info, warn};
+use log::{info, warn};
+use net::net_in;
 use pkbuf::PacketBuffer;
-use std::io::Error;
 use std::sync::{Arc, Mutex};
-use utils::ifrname::build_terminated_if_name;
+use tun_tap::Iface;
 
 lazy_static! {
-    pub static ref VETH: Arc<Mutex<TapDev>> = Arc::new(Mutex::new(TapDev::new("tap0")));
+    pub static ref VETH: Arc<Mutex<TapDev>> = Arc::new(Mutex::new(TapDev::new("tun0").unwrap()));
 }
-
-const TUNTAPDEV: &str = "/dev/net/tun\0";
-
-#[allow(unused)]
-const TAP0: &str = "tap0\0";
-
-const MTU: u16 = 1500;
 
 #[derive(Debug)]
 pub struct TapDev {
-    fd: i32,
-    mtu: u16,
+    iface: Iface,
     stats: NetStats,
 }
 
 impl TapDev {
-    pub fn new(name: &str) -> Self {
-        let fd = unsafe { open(TUNTAPDEV.as_ptr() as *const c_char, O_RDWR) };
-        if fd < 0 {
-            let err = Error::from_raw_os_error(-fd as i32);
-            panic!("open failed: {}", err);
-        }
-        let ifr = ifreq {
-            ifr_name: build_terminated_if_name(name),
-            ifr_ifru: __c_anonymous_ifr_ifru {
-                ifru_flags: (IFF_TAP | IFF_NO_PI) as _,
-            },
-        };
-        let ret = unsafe { ioctl(fd, TUNSETIFF, &ifr) }; // FIXME: should be run as root
-        if ret < 0 {
-            unsafe { close(fd) };
-            let err = Error::from_raw_os_error(-ret as i32);
-            panic!("open failed: {}", err);
-        }
-        Self {
-            fd,
-            mtu: MTU,
+    pub fn new(name: &str) -> Result<Self> {
+        let nic = Iface::new(name, tun_tap::Mode::Tap).with_context(|| context!())?;
+        let dev = Self {
+            iface: nic,
             stats: NetStats::default(),
-        }
+        };
+        Ok(dev)
     }
-}
-
-fn result(ret: isize) -> Result<usize> {
-    if ret < 0 {
-        todo!()
-    }
-    Ok(ret as usize)
 }
 
 impl NetDev for TapDev {
     fn xmit(&mut self, buf: &[u8]) -> Result<usize> {
-        let ret = unsafe { write(self.fd, buf.as_ptr() as *const c_void, buf.len()) };
-        result(ret)
+        let ret = self.iface.send(buf).with_context(|| context!());
+        match ret {
+            Ok(n) => {
+                self.stats.tx_packets += 1;
+                self.stats.tx_bytes += n as u64;
+                info!("tx success: {}", n);
+                Ok(n)
+            }
+            Err(e) => {
+                self.stats.tx_errors += 1;
+                warn!("{}", e);
+                Err(e)
+            }
+        }
     }
     fn recv(&mut self, buf: &mut [u8]) -> Result<usize> {
-        let ret = unsafe { read(self.fd, buf.as_mut_ptr() as *mut c_void, buf.len()) };
-        if ret <= 0 {
-            self.stats.rx_errors += 1;
-            let err = Error::from_raw_os_error(-ret as i32);
-            warn!("read failed: {}", err);
-            return Err(err).with_context(|| context!());
+        let ret = self.iface.recv(buf).with_context(|| context!());
+        match ret {
+            Ok(n) => {
+                self.stats.rx_packets += 1;
+                self.stats.rx_bytes += n as u64;
+                info!("rx success: {}", n);
+                Ok(n)
+            }
+            Err(e) => {
+                self.stats.rx_errors += 1;
+                warn!("{}", e);
+                Err(e)
+            }
         }
-        info!("read success: {}", ret);
-        self.stats.rx_packets += 1;
-        self.stats.rx_bytes += ret as u64;
-        Ok(ret as usize)
     }
 }
 
 impl TapDev {
-    fn alloc_pkbuf(&self) -> PacketBuffer {
-        let mtu = self.mtu;
-        PacketBuffer::new(mtu)
+    fn alloc_pkbuf(this: Arc<Mutex<Self>>) -> Result<PacketBuffer> {
+        PacketBuffer::new(MTU + ETH_HRD_SZ + PACKET_INFO, this.clone())
     }
 
-    fn veth_rx(&mut self) {
-        let mut pkbuf = self.alloc_pkbuf();
-        if self.recv(&mut pkbuf.payload).is_ok() {
-            todo!()
-        }
-    }
+    fn veth_rx(this: Arc<Mutex<Self>>) -> Result<()> {
+        let mut pkbuf = Self::alloc_pkbuf(this.clone()).with_context(|| context!())?;
+        this.lock()
+            .unwrap()
+            .recv(&mut pkbuf.payload)
+            .with_context(|| context!())?;
+        net_in(&pkbuf.payload).with_context(|| context!())?;
 
-    pub fn veth_poll(&mut self) {
+        Ok(())
+    }
+}
+
+impl TapDev {
+    pub fn veth_poll(this: Arc<Mutex<Self>>) {
         loop {
-            let mut pfd = pollfd {
-                fd: self.fd,
-                events: POLLIN,
-                revents: 0,
-            };
-            let ret = unsafe { poll(&mut pfd, 1, -1) };
-            if ret <= 0 {
-                error!("poll failed: {}", ret);
-            }
-            self.veth_rx();
+            Self::veth_rx(this.clone());
         }
     }
+}
+
+pub fn veth_poll() {
+    TapDev::veth_poll(VETH.clone());
 }
 
 #[cfg(test)]
@@ -114,19 +97,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_open() {
-        let dev = TapDev::new(TAP0);
-        println!("{:?}", dev);
-        assert!(dev.fd > 0);
-    }
-
-    #[test]
-    fn io_error() {
-        let err = std::io::Error::from_raw_os_error(5); // EIO
-        println!("{:?}", err);
-        let err = std::io::Error::from_raw_os_error(11); // EAGAIN
-        println!("{:?}", err);
-        let err = std::io::Error::from_raw_os_error(10); // no child
-        println!("{:?}", err);
+    fn it_works() {
+        TapDev::veth_poll(VETH.clone());
     }
 }
