@@ -1,28 +1,28 @@
 use super::*;
 use lazy_static::lazy_static;
 use log::{info, warn};
+use misc::iface::Iface;
 use net::net::net_in;
 use std::{
     cell::RefCell,
     rc::Rc,
     sync::{Arc, Mutex},
 };
-use tun_tap::Iface;
 use types::pkbuf::PacketBuffer;
 
 lazy_static! {
-    pub static ref VETH: Arc<Mutex<TapDev>> = Arc::new(Mutex::new(TapDev::new("tun0").unwrap()));
+    pub static ref VETH: Arc<Mutex<VethDev>> = Arc::new(Mutex::new(VethDev::new("tun0").unwrap()));
 }
 
 #[derive(Debug)]
-pub struct TapDev {
+pub struct VethDev {
     iface: Iface,
     stats: NetStats,
 }
 
-impl TapDev {
+impl VethDev {
     pub fn new(name: &str) -> Result<Self> {
-        let nic = Iface::new(name, tun_tap::Mode::Tap).with_context(|| context!())?;
+        let nic = Iface::new(name).with_context(|| context!())?;
         let dev = Self {
             iface: nic,
             stats: NetStats::default(),
@@ -31,7 +31,7 @@ impl TapDev {
     }
 }
 
-impl NetDev for TapDev {
+impl NetDev for VethDev {
     fn xmit(&mut self, buf: &[u8]) -> Result<usize> {
         let ret = self.iface.send(buf).with_context(|| context!());
         match ret {
@@ -66,9 +66,9 @@ impl NetDev for TapDev {
     }
 }
 
-impl TapDev {
+impl VethDev {
     fn alloc_pkbuf(this: Arc<Mutex<Self>>) -> Result<PacketBuffer> {
-        let mut pkbuf = PacketBuffer::new(MTU + ETH_HRD_SZ + PACKET_INFO)?;
+        let mut pkbuf = PacketBuffer::new(MTU + ETH_HRD_SZ)?;
         *pkbuf.dev_handler_mut() = Some(this.clone());
         Ok(pkbuf)
     }
@@ -86,7 +86,7 @@ impl TapDev {
     }
 }
 
-impl TapDev {
+impl VethDev {
     pub fn veth_poll(this: Arc<Mutex<Self>>) {
         loop {
             let ret = Self::veth_rx(this.clone());
@@ -98,16 +98,5 @@ impl TapDev {
 }
 
 pub fn veth_poll() {
-    TapDev::veth_poll(VETH.clone());
-}
-
-#[cfg(test)]
-mod tests {
-    #[allow(unused)]
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        TapDev::veth_poll(VETH.clone());
-    }
+    VethDev::veth_poll(VETH.clone());
 }

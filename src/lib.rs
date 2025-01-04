@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 
 pub mod netdev;
 
+mod misc;
 mod net;
 mod types;
 mod utils;

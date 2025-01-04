@@ -40,4 +40,3 @@ impl NetStats {
 
 pub const MTU: u16 = 1500;
 pub const ETH_HRD_SZ: u16 = 14;
-pub const PACKET_INFO: u16 = 4; // because of not setting IFF_NO_PI, which contains flags(2B) + protocol(2B)
