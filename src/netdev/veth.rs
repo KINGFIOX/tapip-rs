@@ -1,10 +1,14 @@
 use super::*;
 use lazy_static::lazy_static;
 use log::{info, warn};
-use net::net_in;
-use pkbuf::PacketBuffer;
-use std::sync::{Arc, Mutex};
+use net::net::net_in;
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 use tun_tap::Iface;
+use types::pkbuf::PacketBuffer;
 
 lazy_static! {
     pub static ref VETH: Arc<Mutex<TapDev>> = Arc::new(Mutex::new(TapDev::new("tun0").unwrap()));
@@ -32,13 +36,13 @@ impl NetDev for TapDev {
         let ret = self.iface.send(buf).with_context(|| context!());
         match ret {
             Ok(n) => {
-                self.stats.tx_packets += 1;
-                self.stats.tx_bytes += n as u64;
+                self.stats.tx.packets += 1;
+                self.stats.tx.bytes += n as u64;
                 info!("tx success: {}", n);
                 Ok(n)
             }
             Err(e) => {
-                self.stats.tx_errors += 1;
+                self.stats.tx.errors += 1;
                 warn!("{}", e);
                 Err(e)
             }
@@ -48,13 +52,13 @@ impl NetDev for TapDev {
         let ret = self.iface.recv(buf).with_context(|| context!());
         match ret {
             Ok(n) => {
-                self.stats.rx_packets += 1;
-                self.stats.rx_bytes += n as u64;
+                self.stats.rx.packets += 1;
+                self.stats.rx.bytes += n as u64;
                 info!("rx success: {}", n);
                 Ok(n)
             }
             Err(e) => {
-                self.stats.rx_errors += 1;
+                self.stats.rx.errors += 1;
                 warn!("{}", e);
                 Err(e)
             }
@@ -64,7 +68,9 @@ impl NetDev for TapDev {
 
 impl TapDev {
     fn alloc_pkbuf(this: Arc<Mutex<Self>>) -> Result<PacketBuffer> {
-        PacketBuffer::new(MTU + ETH_HRD_SZ + PACKET_INFO, this.clone())
+        let mut pkbuf = PacketBuffer::new(MTU + ETH_HRD_SZ + PACKET_INFO)?;
+        *pkbuf.dev_handler_mut() = Some(this.clone());
+        Ok(pkbuf)
     }
 
     fn veth_rx(this: Arc<Mutex<Self>>) -> Result<()> {
@@ -73,7 +79,8 @@ impl TapDev {
             .unwrap()
             .recv(&mut pkbuf.payload)
             .with_context(|| context!())?;
-        net_in(&pkbuf.payload).with_context(|| context!())?;
+        let pkbuf = Rc::new(RefCell::new(pkbuf));
+        net_in(pkbuf).with_context(|| context!())?;
 
         Ok(())
     }
@@ -82,7 +89,10 @@ impl TapDev {
 impl TapDev {
     pub fn veth_poll(this: Arc<Mutex<Self>>) {
         loop {
-            Self::veth_rx(this.clone());
+            let ret = Self::veth_rx(this.clone());
+            if let Err(e) = ret {
+                warn!("veth poll error: {}", e);
+            }
         }
     }
 }

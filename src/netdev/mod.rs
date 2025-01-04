@@ -9,24 +9,31 @@ pub trait NetDev {
 }
 
 #[derive(Debug)]
+struct Statistics {
+    packets: u64,
+    errors: u64,
+    bytes: u64,
+}
+
+#[derive(Debug)]
 pub struct NetStats {
-    rx_packets: u64,
-    rx_bytes: u64,
-    rx_errors: u64,
-    tx_packets: u64,
-    tx_errors: u64,
-    tx_bytes: u64,
+    rx: Statistics,
+    tx: Statistics,
 }
 
 impl NetStats {
     fn default() -> Self {
         Self {
-            rx_packets: 0,
-            rx_bytes: 0,
-            rx_errors: 0,
-            tx_packets: 0,
-            tx_errors: 0,
-            tx_bytes: 0,
+            rx: Statistics {
+                packets: 0,
+                errors: 0,
+                bytes: 0,
+            },
+            tx: Statistics {
+                packets: 0,
+                errors: 0,
+                bytes: 0,
+            },
         }
     }
 }

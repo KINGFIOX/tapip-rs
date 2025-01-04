@@ -9,12 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
 
 [[package]]
-name = "arrayvec"
-version = "0.7.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
-
-[[package]]
 name = "autocfg"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -131,15 +125,6 @@ dependencies = [
  "autocfg 1.4.0",
  "cfg-if",
  "lazy_static",
-]
-
-[[package]]
-name = "etherparse"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8d8a704b617484e9d867a0423cd45f7577f008c4068e2e33378f8d3860a6d73"
-dependencies = [
- "arrayvec",
 ]
 
 [[package]]
@@ -695,9 +680,7 @@ name = "tapip-rs"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "etherparse",
  "lazy_static",
- "libc",
  "log 0.4.22",
  "logger",
  "tun-tap",
