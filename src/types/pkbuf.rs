@@ -2,13 +2,16 @@ use crate::netdev::NetDev;
 
 use anyhow::Result;
 use lazy_static::lazy_static;
-use std::sync::{Arc, Mutex};
+use std::{
+    fmt::Debug,
+    sync::{Arc, Mutex},
+};
 
 lazy_static! {
     pub static ref ALLOC_PKGS: Arc<Mutex<u64>> = Arc::new(Mutex::new(0));
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PacketBufferType {
     Other,
     BoardCast,
@@ -22,6 +25,16 @@ pub struct PacketBuffer {
     /// destination type
     pk_type: Option<PacketBufferType>,
     eth_pro: Option<u16>,
+}
+
+impl Debug for PacketBuffer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PacketBuffer")
+            .field("payload", &self.payload)
+            .field("pk_type", &self.pk_type)
+            .field("eth_pro", &self.eth_pro)
+            .finish()
+    }
 }
 
 impl PacketBuffer {
@@ -39,6 +52,10 @@ impl PacketBuffer {
 
     pub fn dev_handler_mut(&mut self) -> &mut Option<Arc<Mutex<dyn NetDev>>> {
         &mut self.dev_handler
+    }
+
+    pub fn pk_type(&self) -> Option<PacketBufferType> {
+        self.pk_type
     }
 
     pub fn pk_type_mut(&mut self) -> &mut Option<PacketBufferType> {

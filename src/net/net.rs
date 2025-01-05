@@ -44,7 +44,7 @@ pub fn net_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     eth_trans_type(pkbuf.clone());
     eth_trans_protocol(pkbuf.clone());
     let Some(eth_pro) = pkbuf.clone().borrow().eth_pro() else {
-        panic!("eth_pro is None"); // internal error
+        return Err(anyhow::anyhow!("eth_pro should not be None"));
     };
     match eth_pro as i32 {
         ETH_P_RARP => {

@@ -1,5 +1,9 @@
 use super::*;
 
+pub const IP_HRD_SZ: usize = size_of::<Ipv4>();
+
+pub const IP_VERSION_4: u8 = 4;
+
 #[derive(Debug)]
 #[repr(packed)]
 pub struct Ipv4 {
@@ -38,5 +42,16 @@ impl Ipv4 {
         let ppayload = (ptr + self.hlen()) as *const u8;
         let len = self.len() - self.hlen();
         unsafe { std::slice::from_raw_parts(ppayload, len) }
+    }
+
+    pub fn checksum(&self) -> u16 {
+        self.checksum.into()
+    }
+}
+
+impl From<*const u8> for Ipv4 {
+    fn from(value: *const u8) -> Self {
+        let ptr = value as *const Self;
+        unsafe { ptr.read_unaligned() }
     }
 }
