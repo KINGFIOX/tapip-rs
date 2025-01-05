@@ -1,9 +1,8 @@
 pub mod arp;
 pub mod ether;
+pub mod hwa;
 pub mod ip;
 pub mod pkbuf;
-
-pub const ETH_ALEN: usize = 6;
 
 #[repr(transparent)]
 #[allow(non_camel_case_types)]

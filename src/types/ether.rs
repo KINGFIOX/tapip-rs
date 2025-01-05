@@ -1,10 +1,19 @@
+use hwa::HardwareAddr;
+
 use super::*;
 
 #[repr(packed)]
 pub struct Ether {
-    pub dst: [u8; ETH_ALEN],
-    pub src: [u8; ETH_ALEN],
-    pub ether_type: be16,
+    pub dst: HardwareAddr,
+    pub src: HardwareAddr,
+    pub protocol: be16,
+}
+
+impl From<&[u8]> for Ether {
+    fn from(value: &[u8]) -> Self {
+        let ptr = value.as_ptr() as *const Self;
+        unsafe { ptr.read_unaligned() }
+    }
 }
 
 impl Ether {
@@ -13,7 +22,7 @@ impl Ether {
         let ppayload = this + size_of::<Self>();
         ppayload as *const u8
     }
-    pub fn ether_type(&self) -> u16 {
-        self.ether_type.into()
+    pub fn protocol(&self) -> u16 {
+        self.protocol.into()
     }
 }

@@ -5,10 +5,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.95"
+env_logger = "0.11.6"
 lazy_static = "1.5.0"
 libc = "0.2.169"
 log = "0.4.22"
-logger = "0.4.0"
 
 [build-dependencies]
 cc = "1.2.7"
