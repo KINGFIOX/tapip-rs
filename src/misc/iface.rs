@@ -35,7 +35,8 @@ impl Iface {
             .read(true)
             .write(true)
             .open("/dev/net/tun")?;
-        let ptr: *const c_char = CString::new(name)?.as_ptr();
+        let name_cstr = CString::new(name)?;
+        let ptr = name_cstr.as_ptr();
         // set interface to tap mode and set interface name
         let err = unsafe { set_tap_if(if_fd.as_raw_fd(), ptr) };
         if err != 0 {
@@ -50,7 +51,7 @@ impl Iface {
             let err_str = std::io::Error::from_raw_os_error(err);
             return Err(anyhow::anyhow!("set_tap failed: {}", err_str)).with_context(|| context!());
         }
-        // raii
+        // sk_fd (RAII), which is used to get some metadata of the interface
         let sk_fd = unsafe { File::from_raw_fd(skfd) };
         // get interface name, use it to getmtu_tap
         let mut if_name = [0; IFNAMSIZ];

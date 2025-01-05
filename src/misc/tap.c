@@ -134,7 +134,7 @@ int set_tap(int *skfd) {
   if (skfd == NULL) {
     return -1;
   }
-  *skfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+  *skfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP); // udp
   if (*skfd < 0) {
     return errno;
   }
