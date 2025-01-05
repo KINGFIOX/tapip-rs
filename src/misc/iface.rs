@@ -54,7 +54,7 @@ impl Iface {
         let sk_fd = unsafe { File::from_raw_fd(skfd) };
         // get interface name, use it to getmtu_tap
         let mut if_name = [0; IFNAMSIZ];
-        let err = unsafe { getname_tap(sk_fd.as_raw_fd(), if_name.as_mut_ptr()) };
+        let err = unsafe { getname_tap(if_fd.as_raw_fd(), if_name.as_mut_ptr()) };
         if err != 0 {
             let err_str = std::io::Error::from_raw_os_error(err);
             return Err(anyhow::anyhow!("getname_tap failed: {}", err_str))
@@ -70,7 +70,7 @@ impl Iface {
         }
         // get hardware address
         let mut ha = [0; ETH_ALEN as usize];
-        let err = unsafe { gethwaddr_tap(sk_fd.as_raw_fd(), ha.as_mut_ptr()) };
+        let err = unsafe { gethwaddr_tap(if_fd.as_raw_fd(), ha.as_mut_ptr()) };
         if err != 0 {
             let err_str = std::io::Error::from_raw_os_error(err);
             return Err(anyhow::anyhow!("gethwaddr_tap failed: {}", err_str))
