@@ -7,7 +7,8 @@ use std::{
 
 use ip::IP_ALEN;
 use lazy_static::lazy_static;
-use libc::{ETH_ALEN, ETH_P_IP};
+use libc::{ETH_ALEN, ETH_P_ARP, ETH_P_IP};
+use log::info;
 use netdev::{NetDev, ETH_HRD_SZ};
 use types::{
     arp::{Arp, ArpProtocol, ARP_HDR_ETHER, ARP_HRD_SZ, ARP_OP_REPLY, ARP_OP_REQUEST, ARP_TIMEOUT},
@@ -24,10 +25,10 @@ pub fn arp_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     if ppacket.pk_type().unwrap() == PacketBufferType::Other {
         return Err(anyhow::anyhow!("this packet is not for us")).with_context(|| context!());
     }
-    if ppacket.data.len() < ETH_HRD_SZ as usize + ARP_HRD_SZ {
+    if ppacket.data().len() < ETH_HRD_SZ as usize + ARP_HRD_SZ {
         return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
-    let eth_hdr = ppacket.payload::<Ether>();
+    let eth_hdr = ppacket.payload();
     let arp_hdr = eth_hdr.payload::<Arp>();
     if arp_hdr.src_hardware_addr() != eth_hdr.src() {
         return Err(anyhow::anyhow!("error sender hardware address")).with_context(|| context!());
@@ -80,7 +81,40 @@ lazy_static! {
 }
 
 fn arp_reply(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
-    todo!()
+    // convert
+    let mut ppacket = pkbuf.borrow_mut();
+    let dev_handler = ppacket.dev_handler().with_context(|| context!())?;
+    let eth_hdr = ppacket.payload_mut();
+    let arp_hdr = eth_hdr.payload_mut::<Arp>();
+
+    arp_hdr.set_opcode(ARP_OP_REPLY); // opcode
+
+    // reply target
+    let target_ip_addr = arp_hdr.src_ip_addr();
+    arp_hdr.set_target_ip_addr(target_ip_addr);
+    let target_hardware_addr = arp_hdr.src_hardware_addr();
+    arp_hdr.set_target_hardware_addr(target_hardware_addr);
+
+    // reply source
+    {
+        let dev = dev_handler.lock().unwrap();
+        let src_hardware_addr = dev.hardware_addr();
+        arp_hdr.set_src_hardware_addr(src_hardware_addr);
+        let src_ip_addr = dev.ipv4_addr();
+        arp_hdr.set_src_ip_addr(src_ip_addr);
+    }
+
+    drop(ppacket);
+
+    info!("arp reply");
+    let _ = PacketBuffer::send(
+        pkbuf,
+        target_hardware_addr,
+        ETH_P_ARP as u16,
+        ARP_HRD_SZ as usize,
+    )
+    .with_context(|| context!());
+    Ok(())
 }
 
 fn arp_queue_send(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
@@ -89,7 +123,7 @@ fn arp_queue_send(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
 
 fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     let ppacket = pkbuf.borrow();
-    let eth_hdr = ppacket.payload::<Ether>();
+    let eth_hdr = ppacket.payload();
     let arp_hdr = eth_hdr.payload::<Arp>();
     // filter broadcast and multicast
     if arp_hdr.target_ip_addr().is_broadcast() {
@@ -102,8 +136,9 @@ fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     let key = (arp_hdr.src_ip_addr(), arp_hdr.protocol());
     let mut arp_table = ARP_TABLE.lock().unwrap();
     let value = arp_table.get_mut(&key);
+    let src_hardware_addr = arp_hdr.src_hardware_addr();
     if let Some(value) = value {
-        value.hardware_addr = arp_hdr.src_hardware_addr();
+        value.hardware_addr = src_hardware_addr; // update
         if value.state == ArpState::Waiting {
             arp_queue_send(pkbuf.clone())?;
         }
@@ -112,12 +147,14 @@ fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     } else {
         let value = ArpValue::new(
             ppacket.dev_handler().unwrap(), // FIXME: unwrap
-            arp_hdr.src_hardware_addr(),
+            src_hardware_addr,
         );
         arp_table.insert(key, value);
     }
+    let opcode = arp_hdr.opcode();
+    drop(ppacket);
 
-    if arp_hdr.opcode() == ARP_OP_REQUEST {
+    if opcode == ARP_OP_REQUEST {
         arp_reply(pkbuf.clone())?;
     }
 

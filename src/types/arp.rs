@@ -34,9 +34,18 @@ impl Arp {
     pub fn opcode(&self) -> u16 {
         self.opcode.into()
     }
+    pub fn set_opcode(&mut self, opcode: u16) {
+        self.opcode = be16::from(opcode);
+    }
     pub fn src_hardware_addr(&self) -> HardwareAddr {
         let ptr = &self.src_hardware_addr as *const HardwareAddr;
         unsafe { ptr.read_unaligned() }
+    }
+    pub fn set_src_hardware_addr(&mut self, hardware_addr: HardwareAddr) {
+        self.src_hardware_addr = hardware_addr;
+    }
+    pub fn set_src_ip_addr(&mut self, ip_addr: IPAddr) {
+        self.src_ip_addr = ip_addr;
     }
     pub fn hdr_len(&self) -> u8 {
         self.hrd_len
@@ -47,7 +56,13 @@ impl Arp {
     pub fn target_ip_addr(&self) -> IPAddr {
         self.target_ip_addr
     }
+    pub fn set_target_ip_addr(&mut self, ip_addr: IPAddr) {
+        self.target_ip_addr = ip_addr;
+    }
     pub fn src_ip_addr(&self) -> IPAddr {
         self.src_ip_addr
+    }
+    pub fn set_target_hardware_addr(&mut self, hardware_addr: HardwareAddr) {
+        self.target_hardware_addr = hardware_addr;
     }
 }

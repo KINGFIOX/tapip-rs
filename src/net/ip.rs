@@ -2,7 +2,6 @@ use super::*;
 use netdev::ETH_HRD_SZ;
 use std::{cell::RefCell, rc::Rc};
 use types::{
-    ether::Ether,
     ip::{Ipv4, IP_HRD_SZ, IP_VERSION_4},
     pkbuf::{PacketBuffer, PacketBufferType},
 };
@@ -19,12 +18,12 @@ pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
         return Err(anyhow::anyhow!("this packet is not for us")).with_context(|| context!());
     }
     // check packet length
-    if ppacket.data.len() < ETH_HRD_SZ as usize + IP_HRD_SZ {
+    if ppacket.data().len() < ETH_HRD_SZ as usize + IP_HRD_SZ {
         return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
 
     // get ether header
-    let ether_hdr = ppacket.payload::<Ether>();
+    let ether_hdr = ppacket.payload();
     let ipv4_hdr = ether_hdr.payload::<Ipv4>();
 
     // only version 4
@@ -37,13 +36,14 @@ pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     //
 
     // check packet length
-    if ipv4_hdr.len() < ipv4_hdr.hlen() || ppacket.data.len() < ETH_HRD_SZ as usize + ipv4_hdr.len()
+    if ipv4_hdr.len() < ipv4_hdr.hlen()
+        || ppacket.data().len() < ETH_HRD_SZ as usize + ipv4_hdr.len()
     {
         return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
 
     // meta data
-    let packet_len = ppacket.data.len();
+    let packet_len = ppacket.data().len();
     let ipv4_len = ipv4_hdr.len();
     drop(ppacket);
 
@@ -51,7 +51,7 @@ pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     if packet_len > ipv4_len + ETH_HRD_SZ as usize {
         let len = ETH_HRD_SZ as usize + ipv4_len;
         let mut ppacket = pkbuf.borrow_mut();
-        ppacket.data = ppacket.data[0..len].to_vec();
+        *ppacket.data_mut() = ppacket.data()[0..len].to_vec();
     }
 
     ip_recv_route(pkbuf).with_context(|| context!())

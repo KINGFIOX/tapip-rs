@@ -1,6 +1,6 @@
 use super::*;
 use lazy_static::lazy_static;
-use log::{info, trace, warn};
+use log::{info, warn};
 use misc::iface::Iface;
 use net::net::net_in;
 use std::{
@@ -8,7 +8,7 @@ use std::{
     rc::Rc,
     sync::{Arc, Mutex},
 };
-use types::pkbuf::PacketBuffer;
+use types::{pkbuf::PacketBuffer, IPAddr};
 
 lazy_static! {
     pub static ref VETH: Arc<Mutex<VethDev>> = Arc::new(Mutex::new(VethDev::new("tun0").unwrap()));
@@ -64,6 +64,12 @@ impl NetDev for VethDev {
             }
         }
     }
+    fn hardware_addr(&self) -> HardwareAddr {
+        self.iface.hardware_addr()
+    }
+    fn ipv4_addr(&self) -> IPAddr {
+        self.iface.ipv4_addr()
+    }
 }
 
 impl VethDev {
@@ -77,7 +83,7 @@ impl VethDev {
         let mut pkbuf = Self::alloc_pkbuf(this.clone()).with_context(|| context!())?;
         this.lock()
             .unwrap()
-            .recv(&mut pkbuf.data)
+            .recv(pkbuf.data_mut())
             .with_context(|| context!())?;
         let pkbuf = Rc::new(RefCell::new(pkbuf));
         net_in(pkbuf).with_context(|| context!())?;

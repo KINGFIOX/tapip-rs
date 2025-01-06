@@ -13,7 +13,7 @@ use types::{
 fn eth_trans_type(pkbuf: Rc<RefCell<PacketBuffer>>) {
     // get eth header
     let mut pkbuf = pkbuf.borrow_mut();
-    let eth_hdr = pkbuf.payload::<Ether>();
+    let eth_hdr = pkbuf.payload();
 
     // type
     let pk_type;
@@ -32,13 +32,13 @@ fn eth_trans_type(pkbuf: Rc<RefCell<PacketBuffer>>) {
 fn eth_trans_protocol(pkbuf: Rc<RefCell<PacketBuffer>>) {
     // get eth header
     let mut pkbuf = pkbuf.borrow_mut();
-    let eth_hdr = pkbuf.payload::<Ether>();
+    let eth_hdr = pkbuf.payload();
     let eth_pro = eth_hdr.protocol();
     pkbuf.eth_pro_mut().replace(eth_pro);
 }
 
 pub fn net_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
-    if pkbuf.borrow().data.len() < ETH_HRD_SZ as usize {
+    if pkbuf.borrow().data().len() < ETH_HRD_SZ as usize {
         return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
     eth_trans_type(pkbuf.clone());

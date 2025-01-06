@@ -1,9 +1,15 @@
-use crate::netdev::NetDev;
+use super::*;
+use ether::Ether;
+use hwa::HardwareAddr;
+use libc::c_int;
+use netdev::{NetDev, ETH_HRD_SZ};
 
 use anyhow::Result;
 use lazy_static::lazy_static;
 use std::{
+    cell::RefCell,
     fmt::Debug,
+    rc::Rc,
     sync::{Arc, Mutex},
 };
 
@@ -21,7 +27,7 @@ pub enum PacketBufferType {
 
 pub struct PacketBuffer {
     dev_handler: Option<Arc<Mutex<dyn NetDev>>>,
-    pub data: Vec<u8>,
+    data: Vec<u8>,
     /// destination type
     pk_type: Option<PacketBufferType>,
     eth_pro: Option<u16>,
@@ -73,12 +79,47 @@ impl PacketBuffer {
     pub fn eth_pro_mut(&mut self) -> &mut Option<u16> {
         &mut self.eth_pro
     }
+
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    pub fn data_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.data
+    }
 }
 
 impl PacketBuffer {
-    pub fn payload<T>(&self) -> &T {
-        let payload = self.data.as_slice() as *const _ as *const u8 as usize;
-        let ptr = payload as *const T;
+    pub fn payload(&self) -> &Ether {
+        let payload = self.data.as_ptr() as usize;
+        let ptr = payload as *const Ether;
         unsafe { &*ptr }
+    }
+    pub fn payload_mut(&mut self) -> &mut Ether {
+        let payload = self.data.as_mut_ptr() as usize;
+        let ptr = payload as *mut Ether;
+        unsafe { &mut *ptr }
+    }
+}
+
+impl PacketBuffer {
+    pub fn send(
+        this: Rc<RefCell<Self>>,
+        dst: HardwareAddr,
+        protocol: u16,
+        len: usize,
+    ) -> Result<usize> {
+        let mut ppacket = this.borrow_mut();
+        let dev_handler = ppacket.dev_handler().unwrap().clone();
+        let eth_hdr = ppacket.payload_mut();
+        eth_hdr.set_protocol(protocol);
+        eth_hdr.set_dst(dst);
+
+        // trim vector
+        let len = ETH_HRD_SZ as usize + len;
+        *ppacket.data_mut() = ppacket.data()[0..len].to_vec();
+
+        let mut dev = dev_handler.lock().unwrap();
+        dev.xmit(ppacket.data()).with_context(|| context!())
     }
 }

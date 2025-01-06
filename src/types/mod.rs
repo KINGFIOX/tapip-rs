@@ -1,3 +1,5 @@
+use super::*;
+
 pub mod arp;
 pub mod ether;
 pub mod hwa;
@@ -15,6 +17,12 @@ impl Into<u16> for be16 {
     }
 }
 
+impl From<u16> for be16 {
+    fn from(value: u16) -> Self {
+        Self(value.to_be())
+    }
+}
+
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -27,6 +35,12 @@ impl Into<u32> for be32 {
 }
 
 pub type IPAddr = be32;
+
+impl IPAddr {
+    pub fn from_be(be: u32) -> Self {
+        Self(be)
+    }
+}
 
 impl IPAddr {
     pub fn is_multicast(&self) -> bool {

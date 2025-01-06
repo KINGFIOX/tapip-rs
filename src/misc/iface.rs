@@ -7,14 +7,16 @@ use std::os::fd::{AsRawFd, FromRawFd};
 
 use anyhow::Context;
 use libc::{c_uchar, ETH_ALEN, IFNAMSIZ};
+use types::hwa::HardwareAddr;
+use types::IPAddr;
 
 #[derive(Debug)]
 pub struct Iface {
     interface_fd: File,
     mtu: i32,
     /// hardware address
-    hardware_addr: [u8; ETH_ALEN as usize],
-    ipv4_addr: u32,
+    hardware_addr: HardwareAddr,
+    ipv4_addr: IPAddr,
 }
 
 extern "C" {
@@ -72,12 +74,13 @@ impl Iface {
             0x02_00_00_0a, /*10.0.0.2*/
         ));
         // get ipv4 address
-        let mut ipaddr = 0;
+        let mut ipaddr = 0; // big endian
         call_c_func!(getipaddr_tap(
             sk_fd.as_raw_fd(),
             if_name.as_ptr(),
             &mut ipaddr
         ));
+
         // set netmask
         call_c_func!(setnetmask_tap(
             sk_fd.as_raw_fd(),
@@ -90,8 +93,8 @@ impl Iface {
         Ok(Self {
             interface_fd: if_fd,
             mtu,
-            hardware_addr: ha,
-            ipv4_addr: ipaddr,
+            hardware_addr: HardwareAddr::from(ha),
+            ipv4_addr: IPAddr::from_be(ipaddr),
         })
     }
 
@@ -101,6 +104,16 @@ impl Iface {
 
     pub fn recv(&mut self, buf: &mut [u8]) -> Result<usize> {
         self.interface_fd.read(buf).with_context(|| context!())
+    }
+}
+
+impl Iface {
+    pub fn hardware_addr(&self) -> HardwareAddr {
+        self.hardware_addr
+    }
+
+    pub fn ipv4_addr(&self) -> IPAddr {
+        self.ipv4_addr
     }
 }
 

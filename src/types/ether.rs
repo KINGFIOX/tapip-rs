@@ -14,11 +14,17 @@ impl Ether {
     pub fn dst(&self) -> HardwareAddr {
         self.dst
     }
+    pub fn set_dst(&mut self, dst: HardwareAddr) {
+        self.dst = dst;
+    }
     pub fn src(&self) -> HardwareAddr {
         self.src
     }
     pub fn protocol(&self) -> u16 {
         self.protocol.into()
+    }
+    pub fn set_protocol(&mut self, protocol: u16) {
+        self.protocol = protocol.into();
     }
 }
 
@@ -27,7 +33,13 @@ impl Ether {
         let this = self as *const Self as usize;
         let ppayload = this + size_of::<Self>();
         let ptr = ppayload as *const T;
-        let obj = unsafe { &*ptr };
-        obj
+        unsafe { &*ptr }
+    }
+
+    pub fn payload_mut<T>(&mut self) -> &mut T {
+        let this = self as *mut Self as usize;
+        let ppayload = this + size_of::<Self>();
+        let ptr = ppayload as *mut T;
+        unsafe { &mut *ptr }
     }
 }
