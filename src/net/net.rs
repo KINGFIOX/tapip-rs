@@ -13,13 +13,12 @@ use types::{
 fn eth_trans_type(pkbuf: Rc<RefCell<PacketBuffer>>) {
     // get eth header
     let mut pkbuf = pkbuf.borrow_mut();
-    let payload: &[u8] = &pkbuf.payload;
-    let eth_hdr = Ether::from(payload);
+    let eth_hdr = pkbuf.payload::<Ether>();
 
     // type
     let pk_type;
-    if eth_hdr.dst.is_multicast() {
-        if eth_hdr.dst.is_broadcast() {
+    if eth_hdr.dst().is_multicast() {
+        if eth_hdr.dst().is_broadcast() {
             pk_type = PacketBufferType::BoardCast;
         } else {
             pk_type = PacketBufferType::Multicast;
@@ -33,13 +32,13 @@ fn eth_trans_type(pkbuf: Rc<RefCell<PacketBuffer>>) {
 fn eth_trans_protocol(pkbuf: Rc<RefCell<PacketBuffer>>) {
     // get eth header
     let mut pkbuf = pkbuf.borrow_mut();
-    let payload: &[u8] = &pkbuf.payload;
-    let eth_hdr = Ether::from(payload);
-    pkbuf.eth_pro_mut().replace(eth_hdr.protocol());
+    let eth_hdr = pkbuf.payload::<Ether>();
+    let eth_pro = eth_hdr.protocol();
+    pkbuf.eth_pro_mut().replace(eth_pro);
 }
 
 pub fn net_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
-    if pkbuf.borrow().payload.len() < ETH_HRD_SZ as usize {
+    if pkbuf.borrow().data.len() < ETH_HRD_SZ as usize {
         return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
     eth_trans_type(pkbuf.clone());

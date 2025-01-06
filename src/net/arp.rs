@@ -21,18 +21,16 @@ use super::*;
 
 pub fn arp_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     let ppacket = pkbuf.borrow();
-    let payload1: &[u8] = &ppacket.payload;
     if ppacket.pk_type().unwrap() == PacketBufferType::Other {
         return Err(anyhow::anyhow!("this packet is not for us")).with_context(|| context!());
     }
-    if ppacket.payload.len() < ETH_HRD_SZ as usize + ARP_HRD_SZ {
+    if ppacket.data.len() < ETH_HRD_SZ as usize + ARP_HRD_SZ {
         return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
-    let eth_hdr = Ether::from(payload1);
-    let payload2 = eth_hdr.payload();
-    let arp_hdr = Arp::from(payload2);
+    let eth_hdr = ppacket.payload::<Ether>();
+    let arp_hdr = eth_hdr.payload::<Arp>();
     if arp_hdr.src_hardware_addr() != eth_hdr.src() {
-        return Err(anyhow::anyhow!("not for us")).with_context(|| context!());
+        return Err(anyhow::anyhow!("error sender hardware address")).with_context(|| context!());
     }
     let arp_pro = arp_hdr.protocol();
     let arp_pro: u16 = arp_pro.into();
@@ -81,22 +79,18 @@ lazy_static! {
         Arc::new(Mutex::new(HashMap::new()));
 }
 
-fn arp_reply(pkbuf: Rc<RefCell<PacketBuffer>>) {
-    let ppacket = pkbuf.borrow();
-    let payload1: &[u8] = &ppacket.payload;
-    let eth_hdr = Ether::from(payload1);
-    let payload2 = eth_hdr.payload();
-    let arp_hdr = Arp::from(payload2);
+fn arp_reply(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
+    todo!()
 }
 
-fn arp_queue_send(pkbuf: Rc<RefCell<PacketBuffer>>) {}
+fn arp_queue_send(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
+    todo!()
+}
 
 fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     let ppacket = pkbuf.borrow();
-    let payload1: &[u8] = &ppacket.payload;
-    let eth_hdr = Ether::from(payload1);
-    let payload2 = eth_hdr.payload();
-    let arp_hdr = Arp::from(payload2);
+    let eth_hdr = ppacket.payload::<Ether>();
+    let arp_hdr = eth_hdr.payload::<Arp>();
     // filter broadcast and multicast
     if arp_hdr.target_ip_addr().is_broadcast() {
         return Err(anyhow::anyhow!("arp broadcast"));
@@ -111,7 +105,7 @@ fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     if let Some(value) = value {
         value.hardware_addr = arp_hdr.src_hardware_addr();
         if value.state == ArpState::Waiting {
-            arp_queue_send(pkbuf.clone());
+            arp_queue_send(pkbuf.clone())?;
         }
         value.state = ArpState::Resolved;
         value.ttl = ARP_TIMEOUT;
@@ -124,7 +118,7 @@ fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     }
 
     if arp_hdr.opcode() == ARP_OP_REQUEST {
-        arp_reply(pkbuf.clone());
+        arp_reply(pkbuf.clone())?;
     }
 
     Ok(())

@@ -77,7 +77,7 @@ impl VethDev {
         let mut pkbuf = Self::alloc_pkbuf(this.clone()).with_context(|| context!())?;
         this.lock()
             .unwrap()
-            .recv(&mut pkbuf.payload)
+            .recv(&mut pkbuf.data)
             .with_context(|| context!())?;
         let pkbuf = Rc::new(RefCell::new(pkbuf));
         net_in(pkbuf).with_context(|| context!())?;

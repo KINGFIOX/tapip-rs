@@ -21,7 +21,7 @@ pub enum PacketBufferType {
 
 pub struct PacketBuffer {
     dev_handler: Option<Arc<Mutex<dyn NetDev>>>,
-    pub payload: Vec<u8>,
+    pub data: Vec<u8>,
     /// destination type
     pk_type: Option<PacketBufferType>,
     eth_pro: Option<u16>,
@@ -30,7 +30,7 @@ pub struct PacketBuffer {
 impl Debug for PacketBuffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PacketBuffer")
-            .field("payload", &self.payload)
+            .field("payload", &self.data)
             .field("pk_type", &self.pk_type)
             .field("eth_pro", &self.eth_pro)
             .finish()
@@ -43,7 +43,7 @@ impl PacketBuffer {
         *allo += 1;
         let pkbuf = Self {
             dev_handler: None,
-            payload: vec![0; reserved as usize],
+            data: vec![0; reserved as usize],
             pk_type: None,
             eth_pro: None,
         };
@@ -72,5 +72,13 @@ impl PacketBuffer {
 
     pub fn eth_pro_mut(&mut self) -> &mut Option<u16> {
         &mut self.eth_pro
+    }
+}
+
+impl PacketBuffer {
+    pub fn payload<T>(&self) -> &T {
+        let payload = self.data.as_slice() as *const _ as *const u8 as usize;
+        let ptr = payload as *const T;
+        unsafe { &*ptr }
     }
 }

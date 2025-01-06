@@ -35,7 +35,8 @@ impl Arp {
         self.opcode.into()
     }
     pub fn src_hardware_addr(&self) -> HardwareAddr {
-        self.src_hardware_addr
+        let ptr = &self.src_hardware_addr as *const HardwareAddr;
+        unsafe { ptr.read_unaligned() }
     }
     pub fn hdr_len(&self) -> u8 {
         self.hrd_len
@@ -48,12 +49,5 @@ impl Arp {
     }
     pub fn src_ip_addr(&self) -> IPAddr {
         self.src_ip_addr
-    }
-}
-
-impl From<*const u8> for Arp {
-    fn from(value: *const u8) -> Self {
-        let ptr = value as *const Arp;
-        unsafe { ptr.read_unaligned() }
     }
 }

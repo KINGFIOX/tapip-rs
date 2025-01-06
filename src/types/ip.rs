@@ -48,10 +48,3 @@ impl Ipv4 {
         self.checksum.into()
     }
 }
-
-impl From<*const u8> for Ipv4 {
-    fn from(value: *const u8) -> Self {
-        let ptr = value as *const Self;
-        unsafe { ptr.read_unaligned() }
-    }
-}
