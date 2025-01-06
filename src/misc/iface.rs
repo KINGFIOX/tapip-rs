@@ -1,6 +1,6 @@
 use super::*;
 
-use std::ffi::{c_char, c_int, c_uint, CString};
+use std::ffi::{c_char, c_int, CString};
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::os::fd::{AsRawFd, FromRawFd};
@@ -8,7 +8,7 @@ use std::os::fd::{AsRawFd, FromRawFd};
 use anyhow::Context;
 use libc::{c_uchar, ETH_ALEN, IFNAMSIZ};
 use types::hwa::HardwareAddr;
-use types::IPV4Addr;
+use types::{FromLe, IPV4Addr};
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -26,11 +26,15 @@ extern "C" {
     fn getname_tap(tapfd: c_int, name: *mut c_char) -> c_int;
     fn getmtu_tap(skfd: c_int, name: *const c_char, mtu: *mut c_int) -> c_int;
     fn gethwaddr_tap(tapfd: c_int, ha: *mut c_uchar) -> c_int;
-    fn setipaddr_tap(skfd: c_int, name: *const c_char, ipaddr: c_uint) -> c_int;
-    fn getipaddr_tap(skfd: c_int, name: *const c_char, ipaddr: *mut c_uint) -> c_int;
-    fn setnetmask_tap(skfd: c_int, name: *const c_char, netmask: c_uint) -> c_int;
+    fn setipaddr_tap(skfd: c_int, name: *const c_char, ipaddr: IPV4Addr) -> c_int;
+    fn getipaddr_tap(skfd: c_int, name: *const c_char, ipaddr: *mut IPV4Addr) -> c_int;
+    fn setnetmask_tap(skfd: c_int, name: *const c_char, netmask: IPV4Addr) -> c_int;
     fn setup_tap(skfd: c_int, name: *const c_char) -> c_int;
 }
+
+const IPV4_ADDR: u32 = 0x0a_00_00_02; /*10.0.0.2*/
+const NETMASK: u32 = 0xff_ff_ff_00; /*255.255.255.0*/
+const TUN_PATH: &str = "/dev/net/tun";
 
 macro_rules! call_c_func {
     ($func:expr) => {
@@ -48,7 +52,7 @@ impl Iface {
         let if_fd = OpenOptions::new() //
             .read(true)
             .write(true)
-            .open("/dev/net/tun")?;
+            .open(TUN_PATH)?;
         let name_cstr = CString::new(name)?;
         let ptr = name_cstr.as_ptr();
 
@@ -72,10 +76,10 @@ impl Iface {
         call_c_func!(setipaddr_tap(
             sk_fd.as_raw_fd(),
             if_name.as_ptr(),
-            0x02_00_00_0a, /*10.0.0.2*/
+            IPV4Addr::from_le(IPV4_ADDR), /*10.0.0.2*/
         ));
         // get ipv4 address
-        let mut ipaddr = 0; // big endian
+        let mut ipaddr: IPV4Addr = IPV4Addr::from_le(0); // big endian
         call_c_func!(getipaddr_tap(
             sk_fd.as_raw_fd(),
             if_name.as_ptr(),
@@ -86,7 +90,7 @@ impl Iface {
         call_c_func!(setnetmask_tap(
             sk_fd.as_raw_fd(),
             if_name.as_ptr(),
-            0x00_ff_ff_ff, /*255.255.255.0*/
+            IPV4Addr::from_le(NETMASK),
         ));
         // setup interface
         call_c_func!(setup_tap(sk_fd.as_raw_fd(), if_name.as_ptr()));
@@ -95,7 +99,7 @@ impl Iface {
             interface_fd: if_fd,
             mtu,
             hardware_addr: HardwareAddr::from(ha),
-            ipv4_addr: IPV4Addr::from_be(ipaddr),
+            ipv4_addr: ipaddr,
         })
     }
 

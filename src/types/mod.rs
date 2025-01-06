@@ -1,3 +1,7 @@
+//! type conversion is one-side.
+//! be to le could use the Into trait.
+//! however, le to be should use FromLe trait.
+
 use std::fmt::Debug;
 
 use super::*;
@@ -13,14 +17,23 @@ pub mod pkbuf;
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct be16(u16);
 
+pub trait FromLe<T> {
+    fn from_le(value: T) -> Self;
+}
+
+#[allow(unused)]
+pub trait FromBe<T> {
+    fn from_be(value: T) -> Self;
+}
+
 impl Into<u16> for be16 {
     fn into(self) -> u16 {
         u16::from_be(self.0)
     }
 }
 
-impl be16 {
-    pub fn from_le(value: u16) -> Self {
+impl FromLe<u16> for be16 {
+    fn from_le(value: u16) -> Self {
         Self(value.to_be())
     }
 }
@@ -43,6 +56,18 @@ impl Into<u32> for be32 {
     }
 }
 
+impl FromLe<u32> for be32 {
+    fn from_le(value: u32) -> Self {
+        Self(value.to_be())
+    }
+}
+
+impl FromBe<u32> for be32 {
+    fn from_be(value: u32) -> Self {
+        Self(value)
+    }
+}
+
 impl Debug for be32 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let le: u32 = u32::from_be(self.0);
@@ -54,9 +79,16 @@ impl Debug for be32 {
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct IPV4Addr(be32);
 
-impl IPV4Addr {
-    pub fn from_be(be: u32) -> Self {
-        let be = be32(be);
+impl FromBe<u32> for IPV4Addr {
+    fn from_be(value: u32) -> Self {
+        let be = be32(value);
+        Self(be)
+    }
+}
+
+impl FromLe<u32> for IPV4Addr {
+    fn from_le(value: u32) -> Self {
+        let be = be32::from_le(value);
         Self(be)
     }
 }

@@ -8,7 +8,23 @@ pub const ARP_OP_REQUEST: u16 = 1;
 pub const ARP_OP_REPLY: u16 = 2;
 pub const ARP_TIMEOUT: u32 = 600;
 
-pub type ArpProtocol = be16;
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ArpProtocol(be16);
+
+impl Into<u16> for ArpProtocol {
+    fn into(self) -> u16 {
+        self.0.into()
+    }
+}
+
+impl Debug for ArpProtocol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let be = self.0;
+        let le: u16 = be.into();
+        write!(f, "0x{:04x}", le)
+    }
+}
 
 #[derive(Debug)]
 #[repr(packed)]

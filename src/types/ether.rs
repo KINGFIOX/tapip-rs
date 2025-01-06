@@ -4,13 +4,13 @@ use super::*;
 
 #[repr(packed)]
 #[derive(Debug)]
-pub struct Ether {
+pub struct EtherHdr {
     dst: HardwareAddr,
     src: HardwareAddr,
     protocol: be16,
 }
 
-impl Ether {
+impl EtherHdr {
     pub fn dst(&self) -> HardwareAddr {
         self.dst
     }
@@ -28,7 +28,7 @@ impl Ether {
     }
 }
 
-impl Ether {
+impl EtherHdr {
     pub fn payload<T>(&self) -> &T {
         let this = self as *const Self as usize;
         let ppayload = this + size_of::<Self>();

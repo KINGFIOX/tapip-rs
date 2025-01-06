@@ -4,12 +4,32 @@ pub const IP_HRD_SZ: usize = size_of::<IPV4Hdr>();
 
 pub const IP_VERSION_4: u8 = 4;
 
+#[repr(transparent)]
+#[derive(Clone, Copy)]
+struct VerHlen(u8);
+
+impl Debug for VerHlen {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "version: {}, hlen:{}", self.version(), self.hlen())
+    }
+}
+
+impl VerHlen {
+    pub fn hlen(&self) -> usize {
+        (self.0 & 0x0F) as usize
+    }
+
+    pub fn version(&self) -> u8 {
+        (self.0 & 0xF0) >> 4
+    }
+}
+
 #[allow(unused)]
 #[derive(Debug)]
 #[repr(packed)]
 pub struct IPV4Hdr {
     /// ip_hlen[3:0], ip_ver[7:4]
-    _version: u8,
+    ver_hlen: VerHlen,
     /// type of service
     tos: u8,
     len: be16,
@@ -26,11 +46,11 @@ pub struct IPV4Hdr {
 
 impl IPV4Hdr {
     pub fn hlen(&self) -> usize {
-        (self._version & 0x0F) as usize
+        self.ver_hlen.hlen()
     }
 
     pub fn version(&self) -> u8 {
-        (self._version & 0xF0) >> 4
+        self.ver_hlen.version()
     }
 
     pub fn len(&self) -> usize {
