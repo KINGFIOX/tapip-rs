@@ -9,14 +9,13 @@ use std::{
 use ip::IP_ALEN;
 use lazy_static::lazy_static;
 use libc::{ETH_ALEN, ETH_P_ARP, ETH_P_IP};
-use log::info;
+use log::{info, trace};
 use netdev::{NetDev, ETH_HRD_SZ};
 use types::{
     arp::{Arp, ArpProtocol, ARP_HDR_ETHER, ARP_HRD_SZ, ARP_OP_REPLY, ARP_OP_REQUEST, ARP_TIMEOUT},
-    ether::Ether,
     hwa::HardwareAddr,
     pkbuf::{PacketBuffer, PacketBufferType},
-    IPAddr,
+    IPV4Addr,
 };
 
 use super::*;
@@ -50,26 +49,26 @@ pub fn arp_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     arp_recv(pkbuf)
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum ArpState {
     Waiting,
     Resolved,
 }
 
+#[derive(Debug)]
 struct ArpValue {
     pkbufs: Vec<Rc<RefCell<PacketBuffer>>>,
     hardware_addr: HardwareAddr,
-    dev: Arc<Mutex<dyn NetDev>>,
     state: ArpState,
     ttl: u32,
 }
 
 impl ArpValue {
+    #[allow(unused)]
     fn new(dev: Arc<Mutex<dyn NetDev>>, hardware_addr: HardwareAddr) -> Self {
         Self {
             pkbufs: Vec::new(),
             hardware_addr,
-            dev,
             state: ArpState::Resolved,
             ttl: ARP_TIMEOUT,
         }
@@ -79,7 +78,7 @@ impl ArpValue {
 unsafe impl Send for ArpValue {}
 
 lazy_static! {
-    static ref ARP_TABLE: Arc<Mutex<HashMap<(IPAddr, ArpProtocol), ArpValue>>> =
+    static ref ARP_TABLE: Arc<Mutex<HashMap<(IPV4Addr, ArpProtocol), ArpValue>>> =
         Arc::new(Mutex::new(HashMap::new()));
 }
 
@@ -166,6 +165,8 @@ fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
         arp_table.insert(key, value);
     }
     drop(ppacket);
+
+    trace!("arp table: {:?}", arp_table);
 
     if opcode == ARP_OP_REQUEST {
         arp_reply(pkbuf)?;

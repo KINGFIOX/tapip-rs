@@ -5,10 +5,7 @@ use libc::{ETH_P_ARP, ETH_P_IP, ETH_P_RARP};
 use log::info;
 use netdev::ETH_HRD_SZ;
 use std::{cell::RefCell, rc::Rc};
-use types::{
-    ether::Ether,
-    pkbuf::{PacketBuffer, PacketBufferType},
-};
+use types::pkbuf::{PacketBuffer, PacketBufferType};
 
 fn eth_trans_type(pkbuf: Rc<RefCell<PacketBuffer>>) {
     // get eth header

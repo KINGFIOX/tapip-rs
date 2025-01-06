@@ -24,7 +24,7 @@ impl Ether {
         self.protocol.into()
     }
     pub fn set_protocol(&mut self, protocol: u16) {
-        self.protocol = protocol.into();
+        self.protocol = be16::from_le(protocol);
     }
 }
 

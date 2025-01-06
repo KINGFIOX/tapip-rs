@@ -1,12 +1,13 @@
 use super::*;
 
-pub const IP_HRD_SZ: usize = size_of::<Ipv4>();
+pub const IP_HRD_SZ: usize = size_of::<IPV4Hdr>();
 
 pub const IP_VERSION_4: u8 = 4;
 
+#[allow(unused)]
 #[derive(Debug)]
 #[repr(packed)]
-pub struct Ipv4 {
+pub struct IPV4Hdr {
     /// ip_hlen[3:0], ip_ver[7:4]
     _version: u8,
     /// type of service
@@ -19,11 +20,11 @@ pub struct Ipv4 {
     /// udp, tcp, icmp, etc.
     protocol: u8,
     checksum: be16,
-    src: IPAddr,
-    dst: IPAddr,
+    src: IPV4Addr,
+    dst: IPV4Addr,
 }
 
-impl Ipv4 {
+impl IPV4Hdr {
     pub fn hlen(&self) -> usize {
         (self._version & 0x0F) as usize
     }
@@ -37,6 +38,7 @@ impl Ipv4 {
         len as usize
     }
 
+    #[allow(unused)]
     pub fn payload(&self) -> &[u8] {
         let ptr = self as *const _ as usize;
         let ppayload = (ptr + self.hlen()) as *const u8;
@@ -44,6 +46,7 @@ impl Ipv4 {
         unsafe { std::slice::from_raw_parts(ppayload, len) }
     }
 
+    #[allow(unused)]
     pub fn checksum(&self) -> u16 {
         self.checksum.into()
     }

@@ -1,7 +1,6 @@
 use super::*;
 use ether::Ether;
 use hwa::HardwareAddr;
-use libc::c_int;
 use netdev::{NetDev, ETH_HRD_SZ};
 
 use anyhow::Result;
@@ -17,6 +16,7 @@ lazy_static! {
     pub static ref ALLOC_PKGS: Arc<Mutex<u64>> = Arc::new(Mutex::new(0));
 }
 
+#[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PacketBufferType {
     Other,

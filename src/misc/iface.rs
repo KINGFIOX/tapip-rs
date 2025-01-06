@@ -8,15 +8,16 @@ use std::os::fd::{AsRawFd, FromRawFd};
 use anyhow::Context;
 use libc::{c_uchar, ETH_ALEN, IFNAMSIZ};
 use types::hwa::HardwareAddr;
-use types::IPAddr;
+use types::IPV4Addr;
 
+#[allow(unused)]
 #[derive(Debug)]
 pub struct Iface {
     interface_fd: File,
     mtu: i32,
     /// hardware address
     hardware_addr: HardwareAddr,
-    ipv4_addr: IPAddr,
+    ipv4_addr: IPV4Addr,
 }
 
 extern "C" {
@@ -94,7 +95,7 @@ impl Iface {
             interface_fd: if_fd,
             mtu,
             hardware_addr: HardwareAddr::from(ha),
-            ipv4_addr: IPAddr::from_be(ipaddr),
+            ipv4_addr: IPV4Addr::from_be(ipaddr),
         })
     }
 
@@ -112,7 +113,7 @@ impl Iface {
         self.hardware_addr
     }
 
-    pub fn ipv4_addr(&self) -> IPAddr {
+    pub fn ipv4_addr(&self) -> IPV4Addr {
         self.ipv4_addr
     }
 }

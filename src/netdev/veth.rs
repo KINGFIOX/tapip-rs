@@ -8,7 +8,7 @@ use std::{
     rc::Rc,
     sync::{Arc, Mutex},
 };
-use types::{pkbuf::PacketBuffer, IPAddr};
+use types::{pkbuf::PacketBuffer, IPV4Addr};
 
 lazy_static! {
     pub static ref VETH: Arc<Mutex<VethDev>> = Arc::new(Mutex::new(VethDev::new("tun0").unwrap()));
@@ -67,7 +67,7 @@ impl NetDev for VethDev {
     fn hardware_addr(&self) -> HardwareAddr {
         self.iface.hardware_addr()
     }
-    fn ipv4_addr(&self) -> IPAddr {
+    fn ipv4_addr(&self) -> IPV4Addr {
         self.iface.ipv4_addr()
     }
 }

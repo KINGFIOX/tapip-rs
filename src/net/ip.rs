@@ -2,7 +2,7 @@ use super::*;
 use netdev::ETH_HRD_SZ;
 use std::{cell::RefCell, rc::Rc};
 use types::{
-    ip::{Ipv4, IP_HRD_SZ, IP_VERSION_4},
+    ip::{IPV4Hdr, IP_HRD_SZ, IP_VERSION_4},
     pkbuf::{PacketBuffer, PacketBufferType},
 };
 
@@ -24,7 +24,7 @@ pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
 
     // get ether header
     let ether_hdr = ppacket.payload();
-    let ipv4_hdr = ether_hdr.payload::<Ipv4>();
+    let ipv4_hdr = ether_hdr.payload::<IPV4Hdr>();
 
     // only version 4
     if ipv4_hdr.version() != IP_VERSION_4 {
@@ -57,6 +57,7 @@ pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     ip_recv_route(pkbuf).with_context(|| context!())
 }
 
+#[allow(unused)]
 fn ip_recv_route(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     todo!()
 }
