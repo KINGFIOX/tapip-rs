@@ -1,6 +1,7 @@
 use std::{
     cell::RefCell,
     collections::HashMap,
+    mem,
     rc::Rc,
     sync::{Arc, Mutex},
 };
@@ -56,6 +57,7 @@ enum ArpState {
 }
 
 struct ArpValue {
+    pkbufs: Vec<Rc<RefCell<PacketBuffer>>>,
     hardware_addr: HardwareAddr,
     dev: Arc<Mutex<dyn NetDev>>,
     state: ArpState,
@@ -65,6 +67,7 @@ struct ArpValue {
 impl ArpValue {
     fn new(dev: Arc<Mutex<dyn NetDev>>, hardware_addr: HardwareAddr) -> Self {
         Self {
+            pkbufs: Vec::new(),
             hardware_addr,
             dev,
             state: ArpState::Resolved,
@@ -117,8 +120,19 @@ fn arp_reply(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     Ok(())
 }
 
-fn arp_queue_send(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
-    todo!()
+fn arp_queue_send(value: &mut ArpValue) -> Result<()> {
+    let pkbufs = mem::replace(&mut value.pkbufs, Vec::new());
+    for pkbuf in pkbufs {
+        let _ = PacketBuffer::send(
+            pkbuf,
+            value.hardware_addr,
+            ETH_P_ARP as u16,
+            ARP_HRD_SZ as usize,
+        )
+        .with_context(|| context!());
+    }
+    info!("arp queue send");
+    Ok(())
 }
 
 fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
@@ -132,30 +146,29 @@ fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     if arp_hdr.target_ip_addr().is_multicast() {
         return Err(anyhow::anyhow!("arp multicast"));
     }
-    //
+
     let key = (arp_hdr.src_ip_addr(), arp_hdr.protocol());
     let mut arp_table = ARP_TABLE.lock().unwrap();
     let value = arp_table.get_mut(&key);
     let src_hardware_addr = arp_hdr.src_hardware_addr();
+    let dev = ppacket.dev_handler().unwrap();
+    let opcode = arp_hdr.opcode();
+
     if let Some(value) = value {
         value.hardware_addr = src_hardware_addr; // update
         if value.state == ArpState::Waiting {
-            arp_queue_send(pkbuf.clone())?;
+            arp_queue_send(value)?;
         }
         value.state = ArpState::Resolved;
         value.ttl = ARP_TIMEOUT;
-    } else {
-        let value = ArpValue::new(
-            ppacket.dev_handler().unwrap(), // FIXME: unwrap
-            src_hardware_addr,
-        );
+    } else if opcode == ARP_OP_REQUEST {
+        let value = ArpValue::new(dev, src_hardware_addr);
         arp_table.insert(key, value);
     }
-    let opcode = arp_hdr.opcode();
     drop(ppacket);
 
     if opcode == ARP_OP_REQUEST {
-        arp_reply(pkbuf.clone())?;
+        arp_reply(pkbuf)?;
     }
 
     Ok(())
