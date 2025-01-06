@@ -20,7 +20,7 @@ pub enum PacketBufferType {
 }
 
 pub struct PacketBuffer {
-    pub dev_handler: Option<Arc<Mutex<dyn NetDev>>>,
+    dev_handler: Option<Arc<Mutex<dyn NetDev>>>,
     pub payload: Vec<u8>,
     /// destination type
     pk_type: Option<PacketBufferType>,
@@ -48,6 +48,10 @@ impl PacketBuffer {
             eth_pro: None,
         };
         Ok(pkbuf)
+    }
+
+    pub fn dev_handler(&self) -> Option<Arc<Mutex<dyn NetDev>>> {
+        self.dev_handler.clone()
     }
 
     pub fn dev_handler_mut(&mut self) -> &mut Option<Arc<Mutex<dyn NetDev>>> {

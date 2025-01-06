@@ -19,8 +19,8 @@ pub struct Ipv4 {
     /// udp, tcp, icmp, etc.
     protocol: u8,
     checksum: be16,
-    src: be32,
-    dst: be32,
+    src: IPAddr,
+    dst: IPAddr,
 }
 
 impl Ipv4 {

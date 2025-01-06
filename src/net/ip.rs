@@ -24,10 +24,10 @@ pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     }
 
     // get ether header
-    let payload: &[u8] = &ppacket.payload;
-    let ether_hdr = Ether::from(payload);
-    let payload = ether_hdr.payload();
-    let ipv4_hdr = Ipv4::from(payload);
+    let payload1: &[u8] = &ppacket.payload;
+    let ether_hdr = Ether::from(payload1);
+    let payload2 = ether_hdr.payload();
+    let ipv4_hdr = Ipv4::from(payload2);
 
     // only version 4
     if ipv4_hdr.version() != IP_VERSION_4 {
