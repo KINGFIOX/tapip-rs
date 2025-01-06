@@ -5,4 +5,4 @@ RUN apt-get update -y \
 
 RUN rustup default stable
 
-RUN apt-get install -y iproute2 iputils-ping tcpdump net-tools
+RUN apt-get install -y iproute2 iputils-ping tcpdump net-tools python3-scapy

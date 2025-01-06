@@ -8,10 +8,35 @@ use types::{
 
 pub const IP_ALEN: u8 = 4;
 
+fn sum(data: &[u8], mut origsum: u32) -> u32 {
+    let mut size = data.len();
+    let mut i = 0;
+    while size > 1 {
+        let word = u16::from_le_bytes([data[i], data[i + 1]]);
+        origsum += word as u32;
+        i += 2;
+        size -= 2;
+    }
+    if size != 0 {
+        let word = u16::from_le_bytes([data[i], 0]);
+        origsum += word as u32;
+    }
+    origsum
+}
+
+fn checksum(data: &[u8], origsum: u32) -> u16 {
+    let mut origsum = sum(data, origsum);
+    origsum = (origsum & 0xffff) + (origsum >> 16);
+    origsum = (origsum & 0xffff) + (origsum >> 16);
+    (!origsum & 0xffff) as u16
+}
+
+fn ipv4_chksum(data: &[u8]) -> u16 {
+    checksum(data, 0)
+}
+
 pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     let ppacket = pkbuf.borrow();
-
-    println!("ipv4_hdr: {:?}", pkbuf);
 
     // check packet type
     if ppacket.pk_type().unwrap() == PacketBufferType::Other {
@@ -31,9 +56,10 @@ pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
         return Err(anyhow::anyhow!("not ipv4 packet")).with_context(|| context!());
     }
 
-    //
-    // TODO: checksum
-    //
+    // // checksum
+    // if ipv4_chksum(ppacket.data()) != 0 {
+    //     return Err(anyhow::anyhow!("checksum error")).with_context(|| context!());
+    // }
 
     // check packet length
     if ipv4_hdr.len() < ipv4_hdr.hlen()

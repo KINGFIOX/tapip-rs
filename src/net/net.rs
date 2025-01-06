@@ -2,7 +2,7 @@ use super::*;
 use arp::arp_in;
 use ip::ipv4_in;
 use libc::{ETH_P_ARP, ETH_P_IP, ETH_P_RARP};
-use log::info;
+use log::{info, trace};
 use netdev::ETH_HRD_SZ;
 use std::{cell::RefCell, rc::Rc};
 use types::pkbuf::{PacketBuffer, PacketBufferType};
@@ -57,6 +57,7 @@ pub fn net_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
         }
         _ => {
             info!("eth_pro is other");
+            // trace!("packet: {:?}", pkbuf.borrow().data());
         }
     }
     Ok(())

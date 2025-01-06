@@ -9,10 +9,15 @@
 	],
 	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
 	"workspaceFolder": "/workspace",
-	"extensions": [
-		"rust-lang.rust-analyzer",
-		"llvm-vs-code-extensions.vscode-clangd"
-	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"rust-lang.rust-analyzer",
+				"llvm-vs-code-extensions.vscode-clangd",
+				"ms-python.python"
+			]
+		}
+	},
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
