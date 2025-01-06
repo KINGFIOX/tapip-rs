@@ -5,7 +5,7 @@ use super::*;
 #[repr(packed)]
 pub struct Ether {
     pub dst: HardwareAddr,
-    pub src: HardwareAddr,
+    src: HardwareAddr,
     pub protocol: be16,
 }
 
@@ -24,5 +24,8 @@ impl Ether {
     }
     pub fn protocol(&self) -> u16 {
         self.protocol.into()
+    }
+    pub fn src(&self) -> HardwareAddr {
+        self.src
     }
 }

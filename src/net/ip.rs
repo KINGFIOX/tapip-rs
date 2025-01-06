@@ -7,6 +7,8 @@ use types::{
     pkbuf::{PacketBuffer, PacketBufferType},
 };
 
+pub const IP_ALEN: u8 = 4;
+
 pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     let ppacket = pkbuf.borrow();
 
@@ -14,11 +16,11 @@ pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
 
     // check packet type
     if ppacket.pk_type().unwrap() == PacketBufferType::Other {
-        return Err(anyhow::anyhow!("this packet is not for us"));
+        return Err(anyhow::anyhow!("this packet is not for us")).with_context(|| context!());
     }
     // check packet length
     if ppacket.payload.len() < ETH_HRD_SZ as usize + IP_HRD_SZ {
-        return Err(anyhow::anyhow!("packet too short"));
+        return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
 
     // get ether header
@@ -29,16 +31,18 @@ pub fn ipv4_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
 
     // only version 4
     if ipv4_hdr.version() != IP_VERSION_4 {
-        return Err(anyhow::anyhow!("not ipv4 packet"));
+        return Err(anyhow::anyhow!("not ipv4 packet")).with_context(|| context!());
     }
 
+    //
     // TODO: checksum
+    //
 
     // check packet length
     if ipv4_hdr.len() < ipv4_hdr.hlen()
         || ppacket.payload.len() < ETH_HRD_SZ as usize + ipv4_hdr.len()
     {
-        return Err(anyhow::anyhow!("packet too short"));
+        return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
 
     // meta data

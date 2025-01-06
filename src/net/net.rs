@@ -1,4 +1,5 @@
 use super::*;
+use arp::arp_in;
 use ip::ipv4_in;
 use libc::{ETH_P_ARP, ETH_P_IP, ETH_P_RARP};
 use log::info;
@@ -39,12 +40,12 @@ fn eth_trans_protocol(pkbuf: Rc<RefCell<PacketBuffer>>) {
 
 pub fn net_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     if pkbuf.borrow().payload.len() < ETH_HRD_SZ as usize {
-        return Err(anyhow::anyhow!("packet too short"));
+        return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
     eth_trans_type(pkbuf.clone());
     eth_trans_protocol(pkbuf.clone());
     let Some(eth_pro) = pkbuf.clone().borrow().eth_pro() else {
-        return Err(anyhow::anyhow!("eth_pro should not be None"));
+        return Err(anyhow::anyhow!("eth_pro should not be None")).with_context(|| context!());
     };
     match eth_pro as i32 {
         ETH_P_RARP => {
@@ -52,6 +53,7 @@ pub fn net_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
         }
         ETH_P_ARP => {
             info!("eth_pro is ARP");
+            arp_in(pkbuf)?;
         }
         ETH_P_IP => {
             info!("eth_pro is IP");

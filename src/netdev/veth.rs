@@ -1,6 +1,6 @@
 use super::*;
 use lazy_static::lazy_static;
-use log::{info, warn};
+use log::{info, trace, warn};
 use misc::iface::Iface;
 use net::net::net_in;
 use std::{
@@ -90,8 +90,8 @@ impl VethDev {
     pub fn veth_poll(this: Arc<Mutex<Self>>) {
         loop {
             let ret = Self::veth_rx(this.clone());
-            if let Err(e) = ret {
-                warn!("veth poll error: {}", e);
+            if ret.is_err() {
+                warn!("veth poll error: {:?}", ret);
             }
         }
     }
