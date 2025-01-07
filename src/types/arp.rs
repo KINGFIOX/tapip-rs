@@ -41,9 +41,9 @@ pub struct Arp {
     protocol_len: u8,                   /* protocol address length */
     operation: be16,                    /* ARP opcode(command) */
     source_hardware_addr: HardwareAddr, /* sender hw addr. source hardware address */
-    source_ipv4_addr: IPV4Addr,         /* sender ip addr */
+    source_ipv4_addr: Ipv4Addr,         /* sender ip addr */
     target_hardware_addr: HardwareAddr, /* target hw addr */
-    target_ipv4_addr: IPV4Addr,         /* target ip addr */
+    target_ipv4_addr: Ipv4Addr,         /* target ip addr */
 }
 
 /// getters
@@ -66,14 +66,14 @@ impl Arp {
     pub fn source_hardware_addr(&self) -> HardwareAddr {
         self.source_hardware_addr
     }
-    pub fn source_ipv4_addr(&self) -> IPV4Addr {
+    pub fn source_ipv4_addr(&self) -> Ipv4Addr {
         self.source_ipv4_addr
     }
     #[allow(unused)]
     pub fn target_hardware_addr(&self) -> HardwareAddr {
         self.target_hardware_addr
     }
-    pub fn target_ipv4_addr(&self) -> IPV4Addr {
+    pub fn target_ipv4_addr(&self) -> Ipv4Addr {
         self.target_ipv4_addr
     }
 }
@@ -86,13 +86,13 @@ impl Arp {
     pub fn set_source_hardware_addr(&mut self, hardware_addr: HardwareAddr) {
         self.source_hardware_addr = hardware_addr;
     }
-    pub fn set_source_ipv4_addr(&mut self, ip_addr: IPV4Addr) {
+    pub fn set_source_ipv4_addr(&mut self, ip_addr: Ipv4Addr) {
         self.source_ipv4_addr = ip_addr;
     }
     pub fn set_target_hardware_addr(&mut self, hardware_addr: HardwareAddr) {
         self.target_hardware_addr = hardware_addr;
     }
-    pub fn set_target_ipv4_addr(&mut self, ip_addr: IPV4Addr) {
+    pub fn set_target_ipv4_addr(&mut self, ip_addr: Ipv4Addr) {
         self.target_ipv4_addr = ip_addr;
     }
 }

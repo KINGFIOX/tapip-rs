@@ -44,8 +44,8 @@ pub struct Ipv4Header {
     /// udp, tcp, icmp, etc.
     protocol: u8,
     checksum: be16,
-    src_addr: IPV4Addr,
-    dst_addr: IPV4Addr,
+    src_addr: Ipv4Addr,
+    dst_addr: Ipv4Addr,
 }
 
 /// getters
@@ -79,22 +79,20 @@ impl Ipv4Header {
         self.checksum.into()
     }
     #[allow(unused)]
-    pub fn src_addr(&self) -> IPV4Addr {
+    pub fn src_addr(&self) -> Ipv4Addr {
         self.src_addr
     }
     #[allow(unused)]
-    pub fn dst_addr(&self) -> IPV4Addr {
+    pub fn dst_addr(&self) -> Ipv4Addr {
         self.dst_addr
     }
     /// Validate the header checksum.
     ///
     /// # Fuzzing
     /// This function always returns `true` when fuzzing.
-    #[allow(unused)]
     pub fn verify_checksum(&self) -> bool {
         let this = self as *const Self as *const u8;
         let data = unsafe { std::slice::from_raw_parts(this, self.total_len() as usize) };
-        println!("data: {:?}", data);
         checksum::data(&data[..self.header_len() as usize]) == !0 /* 0xffff */
     }
 }

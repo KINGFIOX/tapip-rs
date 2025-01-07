@@ -13,7 +13,7 @@ use types::{
     arp::{Arp, ArpProtocol, ARP_HDR_ETHER, ARP_HRD_SZ, ARP_OP_REPLY, ARP_OP_REQUEST, ARP_TIMEOUT},
     hwa::HardwareAddr,
     pkbuf::{PacketBuffer, PacketBufferType},
-    IPV4Addr,
+    Ipv4Addr,
 };
 
 use super::*;
@@ -74,7 +74,7 @@ impl ArpValue {
 unsafe impl Send for ArpValue {}
 
 lazy_static! {
-    static ref ARP_TABLE: Arc<Mutex<HashMap<(IPV4Addr, ArpProtocol), ArpValue>>> =
+    static ref ARP_TABLE: Arc<Mutex<HashMap<(Ipv4Addr, ArpProtocol), ArpValue>>> =
         Arc::new(Mutex::new(HashMap::new()));
 }
 

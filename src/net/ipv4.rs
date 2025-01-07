@@ -1,5 +1,6 @@
 use super::*;
 use netdev::ETH_HRD_SZ;
+use route::rt_input;
 use types::{
     ipv4::{Ipv4Header, IP_HRD_SZ, IP_VERSION_4},
     pkbuf::{PacketBuffer, PacketBufferType},
@@ -52,7 +53,7 @@ pub fn ipv4_in(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
     ip_recv_route(pkbuf).with_context(|| context!())
 }
 
-#[allow(unused)]
-fn ip_recv_route(pkbuf: Box<PacketBuffer>) -> Result<()> {
-    todo!()
+fn ip_recv_route(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
+    rt_input(&mut pkbuf).with_context(|| context!())?;
+    Ok(())
 }

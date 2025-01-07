@@ -4,10 +4,11 @@ use log::{info, warn};
 use misc::iface::Iface;
 use net::net::net_in;
 use std::sync::{Arc, Mutex};
-use types::{pkbuf::PacketBuffer, IPV4Addr};
+use types::{pkbuf::PacketBuffer, Ipv4Addr};
 
 lazy_static! {
     pub static ref VETH: Arc<Mutex<VethDev>> = Arc::new(Mutex::new(VethDev::new("tun0").unwrap()));
+    pub static ref VETH_IP_ADDR: Ipv4Addr = Ipv4Addr::new(10, 0, 0, 2);
 }
 
 #[derive(Debug)]
@@ -63,7 +64,7 @@ impl NetDev for VethDev {
     fn hardware_addr(&self) -> HardwareAddr {
         self.iface.hardware_addr()
     }
-    fn ipv4_addr(&self) -> IPV4Addr {
+    fn ipv4_addr(&self) -> Ipv4Addr {
         self.iface.ipv4_addr()
     }
 }
@@ -101,4 +102,12 @@ impl VethDev {
 
 pub fn veth_poll() {
     VethDev::veth_poll(VETH.clone());
+}
+
+pub fn veth_ip_addr() -> Ipv4Addr {
+    VETH_IP_ADDR.clone()
+}
+
+pub fn veth_handler() -> Arc<Mutex<dyn NetDev>> {
+    VETH.clone()
 }

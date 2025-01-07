@@ -1,6 +1,6 @@
 use super::*;
 use anyhow::Result;
-use types::{hwa::HardwareAddr, IPV4Addr};
+use types::{hwa::HardwareAddr, Ipv4Addr};
 
 pub mod veth;
 
@@ -9,7 +9,7 @@ pub trait NetDev {
     fn xmit(&mut self, buf: &[u8]) -> Result<usize>;
     fn recv(&mut self, buf: &mut [u8]) -> Result<usize>;
     fn hardware_addr(&self) -> HardwareAddr;
-    fn ipv4_addr(&self) -> IPV4Addr;
+    fn ipv4_addr(&self) -> Ipv4Addr;
 }
 
 #[derive(Debug)]

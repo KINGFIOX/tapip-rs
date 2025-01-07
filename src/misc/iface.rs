@@ -8,7 +8,7 @@ use std::os::fd::{AsRawFd, FromRawFd};
 use anyhow::Context;
 use libc::{c_uchar, ETH_ALEN, IFNAMSIZ};
 use types::hwa::HardwareAddr;
-use types::{FromLe, IPV4Addr};
+use types::{FromLe, Ipv4Addr};
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub struct Iface {
     mtu: i32,
     /// hardware address
     hardware_addr: HardwareAddr,
-    ipv4_addr: IPV4Addr,
+    ipv4_addr: Ipv4Addr,
 }
 
 extern "C" {
@@ -26,9 +26,9 @@ extern "C" {
     fn getname_tap(tapfd: c_int, name: *mut c_char) -> c_int;
     fn getmtu_tap(skfd: c_int, name: *const c_char, mtu: *mut c_int) -> c_int;
     fn gethwaddr_tap(tapfd: c_int, ha: *mut c_uchar) -> c_int;
-    fn setipaddr_tap(skfd: c_int, name: *const c_char, ipaddr: IPV4Addr) -> c_int;
-    fn getipaddr_tap(skfd: c_int, name: *const c_char, ipaddr: *mut IPV4Addr) -> c_int;
-    fn setnetmask_tap(skfd: c_int, name: *const c_char, netmask: IPV4Addr) -> c_int;
+    fn setipaddr_tap(skfd: c_int, name: *const c_char, ipaddr: Ipv4Addr) -> c_int;
+    fn getipaddr_tap(skfd: c_int, name: *const c_char, ipaddr: *mut Ipv4Addr) -> c_int;
+    fn setnetmask_tap(skfd: c_int, name: *const c_char, netmask: Ipv4Addr) -> c_int;
     fn setup_tap(skfd: c_int, name: *const c_char) -> c_int;
 }
 
@@ -76,10 +76,10 @@ impl Iface {
         call_c_func!(setipaddr_tap(
             sk_fd.as_raw_fd(),
             if_name.as_ptr(),
-            IPV4Addr::from_le(IPV4_ADDR), /*10.0.0.2*/
+            Ipv4Addr::from_le(IPV4_ADDR), /*10.0.0.2*/
         ));
         // get ipv4 address
-        let mut ipaddr: IPV4Addr = IPV4Addr::from_le(0); // big endian
+        let mut ipaddr: Ipv4Addr = Ipv4Addr::from_le(0); // big endian
         call_c_func!(getipaddr_tap(
             sk_fd.as_raw_fd(),
             if_name.as_ptr(),
@@ -90,7 +90,7 @@ impl Iface {
         call_c_func!(setnetmask_tap(
             sk_fd.as_raw_fd(),
             if_name.as_ptr(),
-            IPV4Addr::from_le(NETMASK),
+            Ipv4Addr::from_le(NETMASK),
         ));
         // setup interface
         call_c_func!(setup_tap(sk_fd.as_raw_fd(), if_name.as_ptr()));
@@ -117,7 +117,7 @@ impl Iface {
         self.hardware_addr
     }
 
-    pub fn ipv4_addr(&self) -> IPV4Addr {
+    pub fn ipv4_addr(&self) -> Ipv4Addr {
         self.ipv4_addr
     }
 }

@@ -90,23 +90,39 @@ impl Debug for be32 {
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct IPV4Addr(be32);
+pub struct Ipv4Addr(be32);
 
-impl FromBe<u32> for IPV4Addr {
+impl Ipv4Addr {
+    pub fn new(a: u8, b: u8, c: u8, d: u8) -> Self {
+        let value = (a as u32) << 24 | (b as u32) << 16 | (c as u32) << 8 | (d as u32);
+        let be = be32::from_le(value);
+        Self(be)
+    }
+}
+
+impl FromBe<u32> for Ipv4Addr {
     fn from_be(value: u32) -> Self {
         let be = be32(value);
         Self(be)
     }
 }
 
-impl FromLe<u32> for IPV4Addr {
+impl FromLe<u32> for Ipv4Addr {
     fn from_le(value: u32) -> Self {
         let be = be32::from_le(value);
         Self(be)
     }
 }
 
-impl Debug for IPV4Addr {
+impl Ipv4Addr {
+    pub fn mask(&self, mask: &Ipv4Mask) -> u32 {
+        let a: u32 = self.0.into();
+        let b: u32 = mask.0 .0.into();
+        a & b
+    }
+}
+
+impl Debug for Ipv4Addr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let be = self.0;
         let le: u32 = be.into();
@@ -121,7 +137,7 @@ impl Debug for IPV4Addr {
     }
 }
 
-impl IPV4Addr {
+impl Ipv4Addr {
     pub fn is_multicast(&self) -> bool {
         let be: be32 = self.0;
         let le: u32 = be.into();
@@ -132,5 +148,25 @@ impl IPV4Addr {
         let be: be32 = self.0;
         let le: u32 = be.into();
         (le & 0xff_00_00_00) == 0xff_00_00_00 || (le & 0xff_00_00_00) == 0x00_00_00_00
+    }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Ipv4Mask(Ipv4Addr);
+
+impl PartialOrd for Ipv4Mask {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        let a: u32 = self.0 .0.into();
+        let b: u32 = other.0 .0.into();
+        a.partial_cmp(&b)
+    }
+}
+
+impl Ipv4Mask {
+    pub fn prefix_new(prefix: u8) -> Ipv4Mask {
+        let mask = (!0 as u32).wrapping_shl(32 - prefix as u32);
+        let ipv4 = Ipv4Addr::from_le(mask);
+        Ipv4Mask(ipv4)
     }
 }
