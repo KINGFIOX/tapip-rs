@@ -24,11 +24,10 @@ fn eth_trans_type(pkbuf: &mut PacketBuffer) {
     pkbuf.pk_type_mut().replace(pk_type);
 }
 
-fn eth_trans_protocol(pkbuf: &mut PacketBuffer) {
+fn eth_trans_protocol(pkbuf: &mut PacketBuffer) -> u16 {
     // get eth header
     let eth_hdr = pkbuf.payload();
-    let eth_pro = eth_hdr.protocol();
-    pkbuf.eth_pro_mut().replace(eth_pro);
+    eth_hdr.protocol()
 }
 
 pub fn net_in(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
@@ -36,10 +35,7 @@ pub fn net_in(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
         return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
     eth_trans_type(&mut pkbuf);
-    eth_trans_protocol(&mut pkbuf);
-    let Some(eth_pro) = pkbuf.eth_pro() else {
-        return Err(anyhow::anyhow!("eth_pro should not be None")).with_context(|| context!());
-    };
+    let eth_pro = eth_trans_protocol(&mut pkbuf);
     match eth_pro as i32 {
         ETH_P_RARP => {
             info!("eth_pro is RARP");

@@ -28,7 +28,6 @@ pub struct PacketBuffer {
     data: Vec<u8>,
     /// destination type
     pk_type: Option<PacketBufferType>,
-    eth_pro: Option<u16>,
 }
 
 impl Debug for PacketBuffer {
@@ -36,7 +35,6 @@ impl Debug for PacketBuffer {
         f.debug_struct("PacketBuffer")
             .field("payload", &self.data)
             .field("pk_type", &self.pk_type)
-            .field("eth_pro", &self.eth_pro)
             .finish()
     }
 }
@@ -49,7 +47,6 @@ impl PacketBuffer {
             dev_handler: None,
             data: vec![0; reserved as usize],
             pk_type: None,
-            eth_pro: None,
         };
         Ok(pkbuf)
     }
@@ -68,14 +65,6 @@ impl PacketBuffer {
 
     pub fn pk_type_mut(&mut self) -> &mut Option<PacketBufferType> {
         &mut self.pk_type
-    }
-
-    pub fn eth_pro(&self) -> Option<u16> {
-        self.eth_pro
-    }
-
-    pub fn eth_pro_mut(&mut self) -> &mut Option<u16> {
-        &mut self.eth_pro
     }
 
     pub fn data(&self) -> &[u8] {
