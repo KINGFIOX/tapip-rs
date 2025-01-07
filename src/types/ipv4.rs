@@ -18,7 +18,7 @@ impl Debug for VerHlen {
 
 impl VerHlen {
     pub fn header_len(&self) -> usize {
-        (self.0 & 0x0F) as usize
+        ((self.0 & 0x0F) as usize) << 2
     }
 
     pub fn version(&self) -> u8 {
@@ -93,7 +93,8 @@ impl Ipv4Header {
     #[allow(unused)]
     pub fn verify_checksum(&self) -> bool {
         let this = self as *const Self as *const u8;
-        let data = unsafe { std::slice::from_raw_parts(this, self.header_len() as usize) };
+        let data = unsafe { std::slice::from_raw_parts(this, self.total_len() as usize) };
+        println!("data: {:?}", data);
         checksum::data(&data[..self.header_len() as usize]) == !0 /* 0xffff */
     }
 }

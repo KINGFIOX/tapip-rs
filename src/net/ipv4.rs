@@ -23,7 +23,7 @@ pub fn ipv4_in(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
 
     // only version 4
     if ipv4_hdr.version() != IP_VERSION_4 {
-        return Err(anyhow::anyhow!("not ipv4 packet")).with_context(|| context!());
+        return Err(anyhow::anyhow!("not ipv4 packet {:?}", ipv4_hdr)).with_context(|| context!());
     }
 
     // checksum
