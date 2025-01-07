@@ -21,7 +21,6 @@ pub trait FromLe<T> {
     fn from_le(value: T) -> Self;
 }
 
-#[allow(unused)]
 pub trait FromBe<T> {
     fn from_be(value: T) -> Self;
 }

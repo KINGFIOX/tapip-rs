@@ -1,23 +1,21 @@
 use super::*;
 use lazy_static::lazy_static;
-use netdev::{
-    veth::{veth_handler, veth_ip_addr},
-    NetDev,
-};
+use netdev::veth::veth_ip_addr;
 use std::sync::{Arc, Mutex};
 use types::{ipv4::Ipv4Header, pkbuf::PacketBuffer, Ipv4Addr, Ipv4Mask};
 
 lazy_static! {
     static ref ROUTE_TABLE: Arc<Mutex<Vec<RouteEntry>>> = {
         let mut route_table = Vec::new();
-        // default route
-        route_table.push(RouteEntry::new(
-            Ipv4Addr::new(0, 0, 0, 0),
-            Ipv4Mask::prefix_new(0),
-            veth_ip_addr(),
-            RouteEntryType::Default,
-            veth_handler(),
-        ));
+        route_add_(
+            RouteEntry::new(
+                Ipv4Addr::new(10, 0, 0, 2),
+                Ipv4Mask::prefix_new(0),
+                veth_ip_addr(),
+                RouteEntryType::Localhost,
+            ),
+            &mut route_table,
+        );
         Arc::new(Mutex::new(route_table))
     };
 }
@@ -30,14 +28,12 @@ pub enum RouteEntryType {
     Localhost,
 }
 
-#[allow(unused)]
 #[derive(Clone)]
 pub struct RouteEntry {
     ip_addr: Ipv4Addr,
     netmask: Ipv4Mask,
     gateway: Ipv4Addr,
     entry_type: RouteEntryType,
-    dev_handler: Arc<Mutex<dyn NetDev>>,
 }
 
 unsafe impl Send for RouteEntry {}
@@ -48,14 +44,12 @@ impl RouteEntry {
         netmask: Ipv4Mask,
         gateway: Ipv4Addr,
         entry_type: RouteEntryType,
-        dev_handler: Arc<Mutex<dyn NetDev>>,
     ) -> Self {
         Self {
             ip_addr,
             netmask,
             gateway,
             entry_type,
-            dev_handler,
         }
     }
 }
@@ -76,16 +70,20 @@ impl RouteEntry {
     }
 }
 
-#[allow(unused)]
-fn route_add(entry: RouteEntry) {
-    let mut route_table = ROUTE_TABLE.lock().unwrap();
-    for (index, existing_entry) in route_table.iter().enumerate() {
+fn route_add_(entry: RouteEntry, table: &mut Vec<RouteEntry>) {
+    for (index, existing_entry) in table.iter().enumerate() {
         if entry.netmask >= existing_entry.netmask {
-            route_table.insert(index + 1, entry);
+            table.insert(index + 1, entry);
             return;
         }
     }
-    route_table.push(entry);
+    table.push(entry);
+}
+
+#[allow(unused)]
+fn route_add(entry: RouteEntry) {
+    let mut route_table = ROUTE_TABLE.lock().unwrap();
+    route_add_(entry, &mut route_table);
 }
 
 fn rt_lookup(ip_addr: Ipv4Addr) -> Option<RouteEntry> {

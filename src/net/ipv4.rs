@@ -2,7 +2,7 @@ use super::*;
 use netdev::ETH_HRD_SZ;
 use route::{rt_input, RouteEntryType};
 use types::{
-    ipv4::{Ipv4Header, IP_HRD_SZ, IP_VERSION_4},
+    ipv4::{Ipv4Header, Ipv4Protocol, IP_HRD_SZ, IP_VERSION_4},
     pkbuf::{PacketBuffer, PacketBufferType},
 };
 
@@ -63,12 +63,53 @@ fn ip_recv_route(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
     Ok(())
 }
 
-#[allow(unused)]
+const IP_FRAG_OFF: u16 = 0x1fff; // fragment offset mask
+const IP_FRAG_MF: u16 = 0x2000; // more fragment flags
+const IP_FRAG_DF: u16 = 0x4000; // dont fragment flags
+
 fn ip_recv_local(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
+    let mut ether_hdr = pkbuf.payload();
+    let mut ipv4_hdr = ether_hdr.payload::<Ipv4Header>();
+    if ipv4_hdr.frag_off() & (IP_FRAG_OFF | IP_FRAG_MF) != 0 {
+        if ipv4_hdr.frag_off() & IP_FRAG_DF != 0 {
+            return Err(anyhow::anyhow!("error fragment")).with_context(|| context!());
+        }
+        pkbuf = ip_reass(pkbuf).with_context(|| context!())?;
+        ether_hdr = pkbuf.payload();
+        ipv4_hdr = ether_hdr.payload::<Ipv4Header>();
+    }
+    let protocol = ipv4_hdr.protocol();
+    raw_in(&mut pkbuf).with_context(|| context!())?;
+    match protocol {
+        Ipv4Protocol::ICMP => icmp_in(pkbuf).with_context(|| context!())?,
+        Ipv4Protocol::TCP => tcp_in(pkbuf).with_context(|| context!())?,
+        Ipv4Protocol::UDP => udp_in(pkbuf).with_context(|| context!())?,
+        Ipv4Protocol::UNKNOWN => todo!(),
+    }
+    Ok(())
+}
+
+fn raw_in(_pkbuf: &mut PacketBuffer) -> Result<()> {
     todo!()
 }
 
-#[allow(unused)]
-fn ip_forward(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
+fn icmp_in(mut _pkbuf: Box<PacketBuffer>) -> Result<()> {
+    todo!()
+}
+
+fn tcp_in(mut _pkbuf: Box<PacketBuffer>) -> Result<()> {
+    todo!()
+}
+
+fn udp_in(mut _pkbuf: Box<PacketBuffer>) -> Result<()> {
+    todo!()
+}
+
+/// reassemble fragmented packet
+fn ip_reass(mut _pkbuf: Box<PacketBuffer>) -> Result<Box<PacketBuffer>> {
+    todo!()
+}
+
+fn ip_forward(mut _pkbuf: Box<PacketBuffer>) -> Result<()> {
     todo!()
 }

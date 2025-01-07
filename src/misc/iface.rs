@@ -10,10 +10,10 @@ use libc::{c_uchar, ETH_ALEN, IFNAMSIZ};
 use types::hwa::HardwareAddr;
 use types::{FromLe, Ipv4Addr};
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct Iface {
     interface_fd: File,
+    #[allow(unused)]
     mtu: i32,
     /// hardware address
     hardware_addr: HardwareAddr,

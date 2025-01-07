@@ -8,7 +8,7 @@ use ipv4::IP_ALEN;
 use lazy_static::lazy_static;
 use libc::{ETH_ALEN, ETH_P_ARP, ETH_P_IP};
 use log::{info, trace};
-use netdev::{NetDev, ETH_HRD_SZ};
+use netdev::ETH_HRD_SZ;
 use types::{
     arp::{Arp, ArpProtocol, ARP_HDR_ETHER, ARP_HRD_SZ, ARP_OP_REPLY, ARP_OP_REQUEST, ARP_TIMEOUT},
     hwa::HardwareAddr,
@@ -60,8 +60,7 @@ struct ArpValue {
 }
 
 impl ArpValue {
-    #[allow(unused)]
-    fn new(dev: Arc<Mutex<dyn NetDev>>, hardware_addr: HardwareAddr) -> Self {
+    fn new(hardware_addr: HardwareAddr) -> Self {
         Self {
             waiters: Vec::new(),
             hardware_addr,
@@ -142,7 +141,6 @@ fn arp_recv(pkbuf: Box<PacketBuffer>) -> Result<()> {
     let mut arp_table = ARP_TABLE.lock().unwrap();
     let value = arp_table.get_mut(&key);
     let src_hardware_addr = arp_hdr.source_hardware_addr();
-    let dev = pkbuf.dev_handler().unwrap();
     let opcode = arp_hdr.operation();
 
     if let Some(value) = value {
@@ -153,7 +151,7 @@ fn arp_recv(pkbuf: Box<PacketBuffer>) -> Result<()> {
         value.state = ArpState::Resolved;
         value.ttl = ARP_TIMEOUT;
     } else if opcode == ARP_OP_REQUEST {
-        let value = ArpValue::new(dev, src_hardware_addr);
+        let value = ArpValue::new(src_hardware_addr);
         arp_table.insert(key, value);
     }
 
