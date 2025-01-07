@@ -1,8 +1,6 @@
 use std::{
-    cell::RefCell,
     collections::HashMap,
     mem,
-    rc::Rc,
     sync::{Arc, Mutex},
 };
 
@@ -20,15 +18,14 @@ use types::{
 
 use super::*;
 
-pub fn arp_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
-    let ppacket = pkbuf.borrow();
-    if ppacket.pk_type().unwrap() == PacketBufferType::Other {
+pub fn arp_in(pkbuf: Box<PacketBuffer>) -> Result<()> {
+    if pkbuf.pk_type().unwrap() == PacketBufferType::Other {
         return Err(anyhow::anyhow!("this packet is not for us")).with_context(|| context!());
     }
-    if ppacket.data().len() < ETH_HRD_SZ as usize + ARP_HRD_SZ {
+    if pkbuf.data().len() < ETH_HRD_SZ as usize + ARP_HRD_SZ {
         return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
-    let eth_hdr = ppacket.payload();
+    let eth_hdr = pkbuf.payload();
     let arp_hdr = eth_hdr.payload::<Arp>();
     if arp_hdr.src_hardware_addr() != eth_hdr.src() {
         return Err(anyhow::anyhow!("error sender hardware address")).with_context(|| context!());
@@ -45,7 +42,6 @@ pub fn arp_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     if arp_hdr.opcode() != ARP_OP_REQUEST && arp_hdr.opcode() != ARP_OP_REPLY {
         return Err(anyhow::anyhow!("unsupported ARP opcode")).with_context(|| context!());
     }
-    drop(ppacket);
     arp_recv(pkbuf)
 }
 
@@ -57,7 +53,7 @@ enum ArpState {
 
 #[derive(Debug)]
 struct ArpValue {
-    pkbufs: Vec<Rc<RefCell<PacketBuffer>>>,
+    waiters: Vec<Box<PacketBuffer>>,
     hardware_addr: HardwareAddr,
     state: ArpState,
     ttl: u32,
@@ -67,7 +63,7 @@ impl ArpValue {
     #[allow(unused)]
     fn new(dev: Arc<Mutex<dyn NetDev>>, hardware_addr: HardwareAddr) -> Self {
         Self {
-            pkbufs: Vec::new(),
+            waiters: Vec::new(),
             hardware_addr,
             state: ArpState::Resolved,
             ttl: ARP_TIMEOUT,
@@ -82,11 +78,10 @@ lazy_static! {
         Arc::new(Mutex::new(HashMap::new()));
 }
 
-fn arp_reply(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
+fn arp_reply(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
     // convert
-    let mut ppacket = pkbuf.borrow_mut();
-    let dev_handler = ppacket.dev_handler().with_context(|| context!())?;
-    let eth_hdr = ppacket.payload_mut();
+    let dev_handler = pkbuf.dev_handler().with_context(|| context!())?;
+    let eth_hdr = pkbuf.payload_mut();
     let arp_hdr = eth_hdr.payload_mut::<Arp>();
 
     arp_hdr.set_opcode(ARP_OP_REPLY); // opcode
@@ -106,11 +101,9 @@ fn arp_reply(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
         arp_hdr.set_src_ip_addr(src_ip_addr);
     }
 
-    drop(ppacket);
-
     info!("arp reply");
     let _ = PacketBuffer::send(
-        pkbuf,
+        &mut pkbuf,
         target_hardware_addr,
         ETH_P_ARP as u16,
         ARP_HRD_SZ as usize,
@@ -120,10 +113,10 @@ fn arp_reply(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
 }
 
 fn arp_queue_send(value: &mut ArpValue) -> Result<()> {
-    let pkbufs = mem::replace(&mut value.pkbufs, Vec::new());
-    for pkbuf in pkbufs {
+    let pkbufs = mem::replace(&mut value.waiters, Vec::new());
+    for mut pkbuf in pkbufs {
         let _ = PacketBuffer::send(
-            pkbuf,
+            &mut pkbuf,
             value.hardware_addr,
             ETH_P_ARP as u16,
             ARP_HRD_SZ as usize,
@@ -134,9 +127,8 @@ fn arp_queue_send(value: &mut ArpValue) -> Result<()> {
     Ok(())
 }
 
-fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
-    let ppacket = pkbuf.borrow();
-    let eth_hdr = ppacket.payload();
+fn arp_recv(pkbuf: Box<PacketBuffer>) -> Result<()> {
+    let eth_hdr = pkbuf.payload();
     let arp_hdr = eth_hdr.payload::<Arp>();
     // filter broadcast and multicast
     if arp_hdr.target_ip_addr().is_broadcast() {
@@ -150,7 +142,7 @@ fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
     let mut arp_table = ARP_TABLE.lock().unwrap();
     let value = arp_table.get_mut(&key);
     let src_hardware_addr = arp_hdr.src_hardware_addr();
-    let dev = ppacket.dev_handler().unwrap();
+    let dev = pkbuf.dev_handler().unwrap();
     let opcode = arp_hdr.opcode();
 
     if let Some(value) = value {
@@ -164,7 +156,6 @@ fn arp_recv(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
         let value = ArpValue::new(dev, src_hardware_addr);
         arp_table.insert(key, value);
     }
-    drop(ppacket);
 
     trace!("arp table: {:?}", arp_table);
 

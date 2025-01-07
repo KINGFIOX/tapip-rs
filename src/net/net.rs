@@ -2,14 +2,12 @@ use super::*;
 use arp::arp_in;
 use ip::ipv4_in;
 use libc::{ETH_P_ARP, ETH_P_IP, ETH_P_RARP};
-use log::{info, trace};
+use log::info;
 use netdev::ETH_HRD_SZ;
-use std::{cell::RefCell, rc::Rc};
 use types::pkbuf::{PacketBuffer, PacketBufferType};
 
-fn eth_trans_type(pkbuf: Rc<RefCell<PacketBuffer>>) {
+fn eth_trans_type(pkbuf: &mut PacketBuffer) {
     // get eth header
-    let mut pkbuf = pkbuf.borrow_mut();
     let eth_hdr = pkbuf.payload();
 
     // type
@@ -26,21 +24,20 @@ fn eth_trans_type(pkbuf: Rc<RefCell<PacketBuffer>>) {
     pkbuf.pk_type_mut().replace(pk_type);
 }
 
-fn eth_trans_protocol(pkbuf: Rc<RefCell<PacketBuffer>>) {
+fn eth_trans_protocol(pkbuf: &mut PacketBuffer) {
     // get eth header
-    let mut pkbuf = pkbuf.borrow_mut();
     let eth_hdr = pkbuf.payload();
     let eth_pro = eth_hdr.protocol();
     pkbuf.eth_pro_mut().replace(eth_pro);
 }
 
-pub fn net_in(pkbuf: Rc<RefCell<PacketBuffer>>) -> Result<()> {
-    if pkbuf.borrow().data().len() < ETH_HRD_SZ as usize {
+pub fn net_in(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
+    if pkbuf.data().len() < ETH_HRD_SZ as usize {
         return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
-    eth_trans_type(pkbuf.clone());
-    eth_trans_protocol(pkbuf.clone());
-    let Some(eth_pro) = pkbuf.clone().borrow().eth_pro() else {
+    eth_trans_type(&mut pkbuf);
+    eth_trans_protocol(&mut pkbuf);
+    let Some(eth_pro) = pkbuf.eth_pro() else {
         return Err(anyhow::anyhow!("eth_pro should not be None")).with_context(|| context!());
     };
     match eth_pro as i32 {

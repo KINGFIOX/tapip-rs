@@ -3,11 +3,7 @@ use lazy_static::lazy_static;
 use log::{info, warn};
 use misc::iface::Iface;
 use net::net::net_in;
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 use types::{pkbuf::PacketBuffer, IPV4Addr};
 
 lazy_static! {
@@ -85,7 +81,7 @@ impl VethDev {
             .unwrap()
             .recv(pkbuf.data_mut())
             .with_context(|| context!())?;
-        let pkbuf = Rc::new(RefCell::new(pkbuf));
+        let pkbuf = Box::new(pkbuf);
         net_in(pkbuf).with_context(|| context!())?;
 
         Ok(())

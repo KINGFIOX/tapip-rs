@@ -6,9 +6,7 @@ use netdev::{NetDev, ETH_HRD_SZ};
 use anyhow::Result;
 use lazy_static::lazy_static;
 use std::{
-    cell::RefCell,
     fmt::Debug,
-    rc::Rc,
     sync::{Arc, Mutex},
 };
 
@@ -103,13 +101,8 @@ impl PacketBuffer {
 }
 
 impl PacketBuffer {
-    pub fn send(
-        this: Rc<RefCell<Self>>,
-        dst: HardwareAddr,
-        protocol: u16,
-        len: usize,
-    ) -> Result<usize> {
-        let mut ppacket = this.borrow_mut();
+    pub fn send(this: &mut Self, dst: HardwareAddr, protocol: u16, len: usize) -> Result<usize> {
+        let ppacket = this;
         let dev_handler = ppacket.dev_handler().unwrap().clone();
         let eth_hdr = ppacket.payload_mut();
         eth_hdr.set_protocol(protocol);
