@@ -23,8 +23,8 @@ lazy_static! {
 }
 
 #[allow(unused)]
-#[derive(Clone)]
-enum RouteEntryType {
+#[derive(Clone, Copy, PartialEq)]
+pub enum RouteEntryType {
     None,
     Default,
     Localhost,
@@ -32,7 +32,7 @@ enum RouteEntryType {
 
 #[allow(unused)]
 #[derive(Clone)]
-struct RouteEntry {
+pub struct RouteEntry {
     ip_addr: Ipv4Addr,
     netmask: Ipv4Mask,
     gateway: Ipv4Addr,
@@ -43,7 +43,7 @@ struct RouteEntry {
 unsafe impl Send for RouteEntry {}
 
 impl RouteEntry {
-    pub fn new(
+    fn new(
         ip_addr: Ipv4Addr,
         netmask: Ipv4Mask,
         gateway: Ipv4Addr,
@@ -57,6 +57,22 @@ impl RouteEntry {
             entry_type,
             dev_handler,
         }
+    }
+}
+
+#[allow(unused)]
+impl RouteEntry {
+    pub fn ip_addr(&self) -> Ipv4Addr {
+        self.ip_addr
+    }
+    pub fn netmask(&self) -> Ipv4Mask {
+        self.netmask
+    }
+    pub fn gateway(&self) -> Ipv4Addr {
+        self.gateway
+    }
+    pub fn entry_type(&self) -> RouteEntryType {
+        self.entry_type
     }
 }
 
@@ -85,11 +101,12 @@ fn rt_lookup(ip_addr: Ipv4Addr) -> Option<RouteEntry> {
 }
 
 #[allow(unused)]
-pub fn rt_input(pkbuf: &PacketBuffer) -> Result<()> {
+pub fn rt_input(pkbuf: &PacketBuffer) -> Result<RouteEntry> {
     let eth_hdr = pkbuf.payload();
     let ip_hdr = eth_hdr.payload::<Ipv4Header>();
     if let Some(entry) = rt_lookup(ip_hdr.dst_addr()) {
+        Ok(entry)
     } else {
+        todo!()
     }
-    todo!()
 }

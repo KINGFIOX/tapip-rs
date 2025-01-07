@@ -1,6 +1,6 @@
 use super::*;
 use netdev::ETH_HRD_SZ;
-use route::rt_input;
+use route::{rt_input, RouteEntryType};
 use types::{
     ipv4::{Ipv4Header, IP_HRD_SZ, IP_VERSION_4},
     pkbuf::{PacketBuffer, PacketBufferType},
@@ -54,6 +54,21 @@ pub fn ipv4_in(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
 }
 
 fn ip_recv_route(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
-    rt_input(&mut pkbuf).with_context(|| context!())?;
+    let rt_entry = rt_input(&mut pkbuf).with_context(|| context!())?;
+    if rt_entry.entry_type() == RouteEntryType::Localhost {
+        ip_recv_local(pkbuf).with_context(|| context!())?;
+    } else {
+        ip_forward(pkbuf).with_context(|| context!())?;
+    }
     Ok(())
+}
+
+#[allow(unused)]
+fn ip_recv_local(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
+    todo!()
+}
+
+#[allow(unused)]
+fn ip_forward(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
+    todo!()
 }
