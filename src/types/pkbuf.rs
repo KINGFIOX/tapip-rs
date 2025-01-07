@@ -1,5 +1,5 @@
 use super::*;
-use ether::EtherHdr;
+use ether::EtherHeader;
 use hwa::HardwareAddr;
 use netdev::{NetDev, ETH_HRD_SZ};
 
@@ -88,14 +88,14 @@ impl PacketBuffer {
 }
 
 impl PacketBuffer {
-    pub fn payload(&self) -> &EtherHdr {
+    pub fn payload(&self) -> &EtherHeader {
         let payload = self.data.as_ptr() as usize;
-        let ptr = payload as *const EtherHdr;
+        let ptr = payload as *const EtherHeader;
         unsafe { &*ptr }
     }
-    pub fn payload_mut(&mut self) -> &mut EtherHdr {
+    pub fn payload_mut(&mut self) -> &mut EtherHeader {
         let payload = self.data.as_mut_ptr() as usize;
-        let ptr = payload as *mut EtherHdr;
+        let ptr = payload as *mut EtherHeader;
         unsafe { &mut *ptr }
     }
 }

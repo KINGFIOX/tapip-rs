@@ -1,7 +1,7 @@
 use super::*;
 use netdev::ETH_HRD_SZ;
 use types::{
-    ip::{IPV4Hdr, IP_HRD_SZ, IP_VERSION_4},
+    ipv4::{Ipv4Header, IP_HRD_SZ, IP_VERSION_4},
     pkbuf::{PacketBuffer, PacketBufferType},
 };
 
@@ -19,27 +19,28 @@ pub fn ipv4_in(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
 
     // get ether header
     let ether_hdr = pkbuf.payload();
-    let ipv4_hdr = ether_hdr.payload::<IPV4Hdr>();
+    let ipv4_hdr = ether_hdr.payload::<Ipv4Header>();
 
     // only version 4
     if ipv4_hdr.version() != IP_VERSION_4 {
         return Err(anyhow::anyhow!("not ipv4 packet")).with_context(|| context!());
     }
 
-    // // checksum
-    // if ipv4_chksum(ppacket.data()) != 0 {
-    //     return Err(anyhow::anyhow!("checksum error")).with_context(|| context!());
-    // }
+    // checksum
+    if !ipv4_hdr.verify_checksum() {
+        return Err(anyhow::anyhow!("checksum error")).with_context(|| context!());
+    }
 
     // check packet length
-    if ipv4_hdr.len() < ipv4_hdr.hlen() || pkbuf.data().len() < ETH_HRD_SZ as usize + ipv4_hdr.len()
+    if ipv4_hdr.total_len() < ipv4_hdr.header_len()
+        || pkbuf.data().len() < ETH_HRD_SZ as usize + ipv4_hdr.total_len()
     {
         return Err(anyhow::anyhow!("packet too short")).with_context(|| context!());
     }
 
     // meta data
     let packet_len = pkbuf.data().len();
-    let ipv4_len = ipv4_hdr.len();
+    let ipv4_len = ipv4_hdr.total_len();
 
     // trim vector
     if packet_len > ipv4_len + ETH_HRD_SZ as usize {

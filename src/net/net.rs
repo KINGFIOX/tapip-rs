@@ -1,6 +1,6 @@
 use super::*;
 use arp::arp_in;
-use ip::ipv4_in;
+use ipv4::ipv4_in;
 use libc::{ETH_P_ARP, ETH_P_IP, ETH_P_RARP};
 use log::info;
 use netdev::ETH_HRD_SZ;

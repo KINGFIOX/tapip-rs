@@ -9,7 +9,7 @@ use super::*;
 pub mod arp;
 pub mod ether;
 pub mod hwa;
-pub mod ip;
+pub mod ipv4;
 pub mod pkbuf;
 
 #[repr(transparent)]
@@ -35,6 +35,19 @@ impl Into<u16> for be16 {
 impl FromLe<u16> for be16 {
     fn from_le(value: u16) -> Self {
         Self(value.to_be())
+    }
+}
+
+impl FromBe<u16> for be16 {
+    fn from_be(value: u16) -> Self {
+        Self(value)
+    }
+}
+
+impl FromBe<&[u8]> for be16 {
+    fn from_be(value: &[u8]) -> Self {
+        let le = u16::from_be_bytes(value[..2].try_into().unwrap());
+        Self::from_le(le)
     }
 }
 

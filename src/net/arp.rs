@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use ip::IP_ALEN;
+use ipv4::IP_ALEN;
 use lazy_static::lazy_static;
 use libc::{ETH_ALEN, ETH_P_ARP, ETH_P_IP};
 use log::{info, trace};
@@ -27,19 +27,19 @@ pub fn arp_in(pkbuf: Box<PacketBuffer>) -> Result<()> {
     }
     let eth_hdr = pkbuf.payload();
     let arp_hdr = eth_hdr.payload::<Arp>();
-    if arp_hdr.src_hardware_addr() != eth_hdr.src() {
+    if arp_hdr.source_hardware_addr() != eth_hdr.src() {
         return Err(anyhow::anyhow!("error sender hardware address")).with_context(|| context!());
     }
-    let arp_pro = arp_hdr.protocol();
+    let arp_pro = arp_hdr.protocol_type();
     let arp_pro: u16 = arp_pro.into();
-    if arp_hdr.type_() != ARP_HDR_ETHER
+    if arp_hdr.hardware_type() != ARP_HDR_ETHER
         || arp_pro as i32 != ETH_P_IP
-        || arp_hdr.hdr_len() as i32 != ETH_ALEN
-        || arp_hdr.pro_len() != IP_ALEN
+        || arp_hdr.hardware_len() as i32 != ETH_ALEN
+        || arp_hdr.protocol_len() != IP_ALEN
     {
         return Err(anyhow::anyhow!("unsupported L2/L3 protocol")).with_context(|| context!());
     }
-    if arp_hdr.opcode() != ARP_OP_REQUEST && arp_hdr.opcode() != ARP_OP_REPLY {
+    if arp_hdr.operation() != ARP_OP_REQUEST && arp_hdr.operation() != ARP_OP_REPLY {
         return Err(anyhow::anyhow!("unsupported ARP opcode")).with_context(|| context!());
     }
     arp_recv(pkbuf)
@@ -84,21 +84,21 @@ fn arp_reply(mut pkbuf: Box<PacketBuffer>) -> Result<()> {
     let eth_hdr = pkbuf.payload_mut();
     let arp_hdr = eth_hdr.payload_mut::<Arp>();
 
-    arp_hdr.set_opcode(ARP_OP_REPLY); // opcode
+    arp_hdr.set_operation(ARP_OP_REPLY); // opcode
 
     // reply target
-    let target_ip_addr = arp_hdr.src_ip_addr();
-    arp_hdr.set_target_ip_addr(target_ip_addr);
-    let target_hardware_addr = arp_hdr.src_hardware_addr();
+    let target_ip_addr = arp_hdr.source_ipv4_addr();
+    arp_hdr.set_target_ipv4_addr(target_ip_addr);
+    let target_hardware_addr = arp_hdr.source_hardware_addr();
     arp_hdr.set_target_hardware_addr(target_hardware_addr);
 
     // reply source
     {
         let dev = dev_handler.lock().unwrap();
         let src_hardware_addr = dev.hardware_addr();
-        arp_hdr.set_src_hardware_addr(src_hardware_addr);
+        arp_hdr.set_source_hardware_addr(src_hardware_addr);
         let src_ip_addr = dev.ipv4_addr();
-        arp_hdr.set_src_ip_addr(src_ip_addr);
+        arp_hdr.set_source_ipv4_addr(src_ip_addr);
     }
 
     info!("arp reply");
@@ -131,19 +131,19 @@ fn arp_recv(pkbuf: Box<PacketBuffer>) -> Result<()> {
     let eth_hdr = pkbuf.payload();
     let arp_hdr = eth_hdr.payload::<Arp>();
     // filter broadcast and multicast
-    if arp_hdr.target_ip_addr().is_broadcast() {
+    if arp_hdr.target_ipv4_addr().is_broadcast() {
         return Err(anyhow::anyhow!("arp broadcast"));
     }
-    if arp_hdr.target_ip_addr().is_multicast() {
+    if arp_hdr.target_ipv4_addr().is_multicast() {
         return Err(anyhow::anyhow!("arp multicast"));
     }
 
-    let key = (arp_hdr.src_ip_addr(), arp_hdr.protocol());
+    let key = (arp_hdr.source_ipv4_addr(), arp_hdr.protocol_type());
     let mut arp_table = ARP_TABLE.lock().unwrap();
     let value = arp_table.get_mut(&key);
-    let src_hardware_addr = arp_hdr.src_hardware_addr();
+    let src_hardware_addr = arp_hdr.source_hardware_addr();
     let dev = pkbuf.dev_handler().unwrap();
-    let opcode = arp_hdr.opcode();
+    let opcode = arp_hdr.operation();
 
     if let Some(value) = value {
         value.hardware_addr = src_hardware_addr; // update

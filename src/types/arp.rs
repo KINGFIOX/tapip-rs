@@ -1,3 +1,9 @@
+//! # ARP protocol
+//!
+//! generally, the api is `xxx` as getter and `xxx_mut` as setter.
+//! becase of the unaligned access, we could not use `xxx_mut` as setter,
+//! so we use `set_xxx` as setter, instead.
+
 use hwa::HardwareAddr;
 
 use super::*;
@@ -29,56 +35,64 @@ impl Debug for ArpProtocol {
 #[derive(Debug)]
 #[repr(packed)]
 pub struct Arp {
-    type_: be16,                        /* hardware address type */
-    pro: ArpProtocol,                   /* protocol address type */
-    hrd_len: u8,                        /* hardware address length */
-    pro_len: u8,                        /* protocol address length */
-    opcode: be16,                       /* ARP opcode(command) */
-    src_hardware_addr: HardwareAddr,    /* sender hw addr. source hardware address */
-    src_ip_addr: IPV4Addr,              /* sender ip addr */
+    hardware_type: be16,                /* hardware address type */
+    protocol_type: ArpProtocol,         /* protocol address type */
+    hardware_len: u8,                   /* hardware address length */
+    protocol_len: u8,                   /* protocol address length */
+    operation: be16,                    /* ARP opcode(command) */
+    source_hardware_addr: HardwareAddr, /* sender hw addr. source hardware address */
+    source_ipv4_addr: IPV4Addr,         /* sender ip addr */
     target_hardware_addr: HardwareAddr, /* target hw addr */
-    target_ip_addr: IPV4Addr,           /* target ip addr */
+    target_ipv4_addr: IPV4Addr,         /* target ip addr */
 }
 
+/// getters
 impl Arp {
-    pub fn type_(&self) -> u16 {
-        self.type_.into()
+    pub fn hardware_type(&self) -> u16 {
+        self.hardware_type.into()
     }
-    pub fn protocol(&self) -> ArpProtocol {
-        self.pro
+    pub fn protocol_type(&self) -> ArpProtocol {
+        self.protocol_type
     }
-    pub fn opcode(&self) -> u16 {
-        self.opcode.into()
+    pub fn hardware_len(&self) -> u8 {
+        self.hardware_len
     }
-    pub fn set_opcode(&mut self, opcode: u16) {
-        self.opcode = be16::from_le(opcode);
+    pub fn protocol_len(&self) -> u8 {
+        self.protocol_len
     }
-    pub fn src_hardware_addr(&self) -> HardwareAddr {
-        let ptr = &self.src_hardware_addr as *const HardwareAddr;
-        unsafe { ptr.read_unaligned() }
+    pub fn operation(&self) -> u16 {
+        self.operation.into()
     }
-    pub fn set_src_hardware_addr(&mut self, hardware_addr: HardwareAddr) {
-        self.src_hardware_addr = hardware_addr;
+    pub fn source_hardware_addr(&self) -> HardwareAddr {
+        self.source_hardware_addr
     }
-    pub fn set_src_ip_addr(&mut self, ip_addr: IPV4Addr) {
-        self.src_ip_addr = ip_addr;
+    pub fn source_ipv4_addr(&self) -> IPV4Addr {
+        self.source_ipv4_addr
     }
-    pub fn hdr_len(&self) -> u8 {
-        self.hrd_len
+    #[allow(unused)]
+    pub fn target_hardware_addr(&self) -> HardwareAddr {
+        self.target_hardware_addr
     }
-    pub fn pro_len(&self) -> u8 {
-        self.pro_len
+    pub fn target_ipv4_addr(&self) -> IPV4Addr {
+        self.target_ipv4_addr
     }
-    pub fn target_ip_addr(&self) -> IPV4Addr {
-        self.target_ip_addr
+}
+
+/// setters
+impl Arp {
+    pub fn set_operation(&mut self, operation: u16) {
+        self.operation = be16::from_le(operation);
     }
-    pub fn set_target_ip_addr(&mut self, ip_addr: IPV4Addr) {
-        self.target_ip_addr = ip_addr;
+    pub fn set_source_hardware_addr(&mut self, hardware_addr: HardwareAddr) {
+        self.source_hardware_addr = hardware_addr;
     }
-    pub fn src_ip_addr(&self) -> IPV4Addr {
-        self.src_ip_addr
+    pub fn set_source_ipv4_addr(&mut self, ip_addr: IPV4Addr) {
+        self.source_ipv4_addr = ip_addr;
     }
     pub fn set_target_hardware_addr(&mut self, hardware_addr: HardwareAddr) {
         self.target_hardware_addr = hardware_addr;
+    }
+    pub fn set_target_ipv4_addr(&mut self, ip_addr: IPV4Addr) {
+        self.target_ipv4_addr = ip_addr;
     }
 }
