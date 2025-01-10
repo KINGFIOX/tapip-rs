@@ -48,6 +48,12 @@ macro_rules! call_c_func {
 }
 
 impl Iface {
+    /// same effect as the following commands in bash.
+    /// ```bash
+    /// ip addr add 10.0.0.2/24 dev tun0
+    /// ip tuntap add tun0 mode tap
+    /// ip link set up dev tun0
+    /// ```
     pub fn new(name: &str) -> Result<Self> {
         let if_fd = OpenOptions::new() //
             .read(true)

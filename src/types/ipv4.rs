@@ -28,34 +28,25 @@ impl VerHlen {
 
 #[repr(transparent)]
 #[derive(Clone, Copy)]
-pub struct __Ipv4Protocol(u8);
+pub struct Ipv4Protocol(u8);
+
+impl Into<u8> for Ipv4Protocol {
+    fn into(self) -> u8 {
+        self.0
+    }
+}
 
 pub const IP_IP_ICMP: u8 = 1;
 pub const IP_IP_TCP: u8 = 6;
 pub const IP_IP_UDP: u8 = 17;
 
-impl Debug for __Ipv4Protocol {
+impl Debug for Ipv4Protocol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let protocol = Ipv4Protocol::from(*self);
-        write!(f, "{:?}", protocol)
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum Ipv4Protocol {
-    UNKNOWN,
-    ICMP,
-    TCP,
-    UDP,
-}
-
-impl From<__Ipv4Protocol> for Ipv4Protocol {
-    fn from(value: __Ipv4Protocol) -> Self {
-        match value.0 {
-            IP_IP_ICMP => Ipv4Protocol::ICMP,
-            IP_IP_TCP => Ipv4Protocol::TCP,
-            IP_IP_UDP => Ipv4Protocol::UDP,
-            _ => Ipv4Protocol::UNKNOWN,
+        match self.0 {
+            IP_IP_ICMP => write!(f, "ICMP"),
+            IP_IP_TCP => write!(f, "TCP"),
+            IP_IP_UDP => write!(f, "UDP"),
+            _ => write!(f, "UNKNOWN"),
         }
     }
 }
@@ -75,7 +66,7 @@ pub struct Ipv4Header {
     /// time to live field.
     ttl: u8,
     /// udp, tcp, icmp, etc.
-    protocol: __Ipv4Protocol,
+    protocol: Ipv4Protocol,
     checksum: be16,
     src_addr: Ipv4Addr,
     dst_addr: Ipv4Addr,
