@@ -1,3 +1,7 @@
+pub mod phy;
+pub mod time;
+pub mod wire;
+
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
