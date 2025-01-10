@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros; // this should be previous than the mod phy; fuck rust
+
 pub mod phy;
 pub mod time;
 pub mod wire;

@@ -2,8 +2,15 @@
 name = "tapip-rs"
 version = "0.1.0"
 edition = "2021"
+autoexamples = false
 
 [dependencies]
-env_logger = "0.11.6"
 libc = "0.2.169"
 log = "0.4.22"
+
+[dev-dependencies]
+env_logger = "0.11.6"
+getopts = "0.2.21"
+
+[[example]]
+name = "server"

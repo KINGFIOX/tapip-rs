@@ -1,7 +1,9 @@
-use crate::time::Instant;
+pub use self::tuntap_interface::TunTapInterface;
 
 mod sys;
 mod tuntap_interface;
+
+use crate::time::Instant;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Default)]
 pub enum Medium {

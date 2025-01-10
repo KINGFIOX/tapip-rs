@@ -2,8 +2,6 @@ use std::os::fd::{AsRawFd, RawFd};
 use std::rc::Rc;
 use std::{cell::RefCell, io};
 
-use log::debug;
-
 use crate::phy::{self, sys, Device, DeviceCapabilities, Medium};
 use crate::time::Instant;
 
@@ -84,7 +82,7 @@ impl phy::TxToken for TxToken {
         match lower.send(&buffer[..]) {
             Ok(_) => {}
             Err(err) if err.kind() == io::ErrorKind::WouldBlock => {
-                debug!("phy: tx failed due to WouldBlock");
+                net_debug!("phy: tx failed due to WouldBlock");
             }
             Err(err) => panic!("{}", err),
         }
