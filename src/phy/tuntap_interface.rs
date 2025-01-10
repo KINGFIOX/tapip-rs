@@ -1,8 +1,11 @@
-use std::os::fd::RawFd;
+use std::os::fd::{AsRawFd, RawFd};
 use std::rc::Rc;
 use std::{cell::RefCell, io};
 
-use crate::phy::{self, sys, Medium};
+use log::debug;
+
+use crate::phy::{self, sys, Device, DeviceCapabilities, Medium};
+use crate::time::Instant;
 
 /// A virtual TUN (IP) or TAP (Ethernet) interface.
 #[derive(Debug)]
@@ -13,6 +16,12 @@ pub struct TunTapInterface {
     mtu: usize,
     #[allow(unused)]
     medium: Medium,
+}
+
+impl AsRawFd for TunTapInterface {
+    fn as_raw_fd(&self) -> RawFd {
+        self.lower.borrow().as_raw_fd()
+    }
 }
 
 impl TunTapInterface {
@@ -75,10 +84,46 @@ impl phy::TxToken for TxToken {
         match lower.send(&buffer[..]) {
             Ok(_) => {}
             Err(err) if err.kind() == io::ErrorKind::WouldBlock => {
-                // net_debug!("phy: tx failed due to WouldBlock")
+                debug!("phy: tx failed due to WouldBlock");
             }
             Err(err) => panic!("{}", err),
         }
         result
+    }
+}
+
+impl Device for TunTapInterface {
+    type RxToken<'a> = RxToken;
+    type TxToken<'a> = TxToken;
+
+    fn capabilities(&self) -> DeviceCapabilities {
+        DeviceCapabilities {
+            max_transmission_unit: self.mtu,
+            medium: self.medium,
+            ..DeviceCapabilities::default()
+        }
+    }
+
+    fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
+        let mut lower = self.lower.borrow_mut();
+        let mut buffer = vec![0; self.mtu];
+        match lower.recv(&mut buffer[..]) {
+            Ok(size) => {
+                buffer.resize(size, 0);
+                let rx = RxToken { buffer };
+                let tx = TxToken {
+                    lower: self.lower.clone(),
+                };
+                Some((rx, tx))
+            }
+            Err(err) if err.kind() == io::ErrorKind::WouldBlock => None,
+            Err(err) => panic!("{}", err),
+        }
+    }
+
+    fn transmit(&mut self, _timestamp: Instant) -> Option<Self::TxToken<'_>> {
+        Some(TxToken {
+            lower: self.lower.clone(),
+        })
     }
 }
