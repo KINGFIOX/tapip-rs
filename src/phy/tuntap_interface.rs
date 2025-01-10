@@ -2,7 +2,7 @@ use std::os::fd::RawFd;
 use std::rc::Rc;
 use std::{cell::RefCell, io};
 
-use crate::phy::{sys, Medium};
+use crate::phy::{self, sys, Medium};
 
 /// A virtual TUN (IP) or TAP (Ethernet) interface.
 #[derive(Debug)]
@@ -44,5 +44,41 @@ impl TunTapInterface {
             mtu,
             medium,
         })
+    }
+}
+
+pub struct RxToken {
+    buffer: Vec<u8>,
+}
+
+impl phy::RxToken for RxToken {
+    fn consume<R, F>(self, f: F) -> R
+    where
+        F: FnOnce(&[u8]) -> R,
+    {
+        f(&self.buffer[..])
+    }
+}
+
+pub struct TxToken {
+    lower: Rc<RefCell<sys::TunTapInterfaceDesc>>,
+}
+
+impl phy::TxToken for TxToken {
+    fn consume<R, F>(self, len: usize, f: F) -> R
+    where
+        F: FnOnce(&mut [u8]) -> R,
+    {
+        let mut lower = self.lower.borrow_mut();
+        let mut buffer = vec![0; len];
+        let result = f(&mut buffer);
+        match lower.send(&buffer[..]) {
+            Ok(_) => {}
+            Err(err) if err.kind() == io::ErrorKind::WouldBlock => {
+                // net_debug!("phy: tx failed due to WouldBlock")
+            }
+            Err(err) => panic!("{}", err),
+        }
+        result
     }
 }
