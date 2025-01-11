@@ -1,7 +1,9 @@
-pub use self::tuntap_interface::TunTapInterface;
-
+mod loopback;
 mod sys;
 mod tuntap_interface;
+
+pub use self::loopback::Loopback;
+pub use self::tuntap_interface::TunTapInterface;
 
 use crate::time::Instant;
 
@@ -10,8 +12,6 @@ pub enum Medium {
     #[default]
     Ethernet,
     Ip,
-    /// IEEE 802.15.4 wireless
-    Ieee802154,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Default)]
@@ -141,6 +141,20 @@ pub struct ChecksumCapabilities {
     pub tcp: Checksum,
     pub icmpv4: Checksum,
     pub icmpv6: Checksum,
+}
+
+impl ChecksumCapabilities {
+    /// Checksum behavior that results in not computing or verifying checksums
+    /// for any of the supported protocols.
+    pub fn ignored() -> Self {
+        ChecksumCapabilities {
+            ipv4: Checksum::None,
+            udp: Checksum::None,
+            tcp: Checksum::None,
+            icmpv4: Checksum::None,
+            icmpv6: Checksum::None,
+        }
+    }
 }
 
 /// A description of checksum behavior for a particular protocol.

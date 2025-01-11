@@ -1,9 +1,13 @@
 mod utils;
 
 use std::os::fd::AsRawFd;
+use tapip_rs::iface::{Config, Interface};
+use tapip_rs::time::Instant;
+use tapip_rs::wire::{EthernetAddress, IpAddress, IpCidr, Ipv4Address};
 
 #[allow(unused_imports)]
 use log::debug;
+use tapip_rs::phy::Device;
 #[allow(unused_imports)]
 use tapip_rs::phy::Medium;
 
@@ -15,39 +19,29 @@ fn main() {
     utils::add_middleware_options(&mut opts, &mut free);
 
     let mut matches = utils::parse_options(&opts, free);
-    let device = utils::parse_tuntap_options(&mut matches);
+    let mut device = utils::parse_tuntap_options(&mut matches);
     #[allow(unused)]
     let fd = device.as_raw_fd();
-    // let mut device =
-    //     utils::parse_middleware_options(&mut matches, device, /*loopback=*/ false);
 
-    // // Create interface
-    // let mut config = match device.capabilities().medium {
-    //     Medium::Ethernet => {
-    //         Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
-    //     }
-    //     Medium::Ip => Config::new(smoltcp::wire::HardwareAddress::Ip),
-    //     Medium::Ieee802154 => todo!(),
-    // };
+    let mut config = match device.capabilities().medium {
+        Medium::Ethernet => {
+            Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
+        }
+        Medium::Ip => todo!(),
+    };
+    config.random_seed = rand::random(); // non_exhaustive
 
-    // config.random_seed = rand::random();
-
-    // let mut iface = Interface::new(config, &mut device, Instant::now());
-    // iface.update_ip_addrs(|ip_addrs| {
-    //     ip_addrs
-    //         .push(IpCidr::new(IpAddress::v4(192, 168, 69, 1), 24))
-    //         .unwrap();
-    //     ip_addrs
-    //         .push(IpCidr::new(IpAddress::v6(0xfdaa, 0, 0, 0, 0, 0, 0, 1), 64))
-    //         .unwrap();
-    //     ip_addrs
-    //         .push(IpCidr::new(IpAddress::v6(0xfe80, 0, 0, 0, 0, 0, 0, 1), 64))
-    //         .unwrap();
-    // });
-    // iface
-    //     .routes_mut()
-    //     .add_default_ipv4_route(Ipv4Address::new(192, 168, 69, 100))
-    //     .unwrap();
+    #[allow(unused)]
+    let mut iface = Interface::new(config, &mut device, Instant::now());
+    iface.update_ip_addrs(|ip_addrs| {
+        ip_addrs
+            .push(IpCidr::new(IpAddress::v4(192, 168, 69, 1), 24))
+            .unwrap();
+    });
+    iface
+        .routes_mut()
+        .add_default_ipv4_route(Ipv4Address::new(192, 168, 69, 100))
+        .unwrap();
     // iface
     //     .routes_mut()
     //     .add_default_ipv6_route(Ipv6Address::new(0xfe80, 0, 0, 0, 0, 0, 0, 0x100))

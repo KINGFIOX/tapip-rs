@@ -56,7 +56,6 @@ impl TunTapInterfaceDesc {
         let mode = match medium {
             Medium::Ip => imp::IFF_TUN,
             Medium::Ethernet => imp::IFF_TAP,
-            Medium::Ieee802154 => todo!(),
         };
         ifr.ifr_data = mode | imp::IFF_NO_PI;
         ifreq_ioctl(lower, ifr, imp::TUNSETIFF).map(|_| ())
@@ -85,7 +84,6 @@ impl TunTapInterfaceDesc {
         let mtu = match medium {
             Medium::Ip => ip_mtu,
             Medium::Ethernet => ip_mtu + EthernetFrame::<&[u8]>::header_len(),
-            Medium::Ieee802154 => todo!(),
         };
 
         Ok(mtu)

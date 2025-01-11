@@ -119,6 +119,8 @@ impl Device for TunTapInterface {
         }
     }
 
+    /// just return a tx_token included the fd of the interface,
+    /// which could be used to send data. Not send data in this function actually.
     fn transmit(&mut self, _timestamp: Instant) -> Option<Self::TxToken<'_>> {
         Some(TxToken {
             lower: self.lower.clone(),

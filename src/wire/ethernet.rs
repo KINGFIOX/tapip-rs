@@ -22,3 +22,7 @@ impl<T: AsRef<[u8]>> Frame<T> {
         HEADER_LEN
     }
 }
+
+/// A six-octet Ethernet II address.
+#[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Default)]
+pub struct Address(pub [u8; 6]);
