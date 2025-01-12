@@ -2,6 +2,7 @@ mod utils;
 
 use std::os::fd::AsRawFd;
 use tapip_rs::iface::{Config, Interface};
+use tapip_rs::socket::{tcp, udp};
 use tapip_rs::time::Instant;
 use tapip_rs::wire::{EthernetAddress, IpAddress, IpCidr, Ipv4Address};
 
@@ -42,37 +43,35 @@ fn main() {
         .routes_mut()
         .add_default_ipv4_route(Ipv4Address::new(192, 168, 69, 100))
         .unwrap();
-    // iface
-    //     .routes_mut()
-    //     .add_default_ipv6_route(Ipv6Address::new(0xfe80, 0, 0, 0, 0, 0, 0, 0x100))
-    //     .unwrap();
 
-    // // Create sockets
-    // let udp_rx_buffer = udp::PacketBuffer::new(
-    //     vec![udp::PacketMetadata::EMPTY, udp::PacketMetadata::EMPTY],
-    //     vec![0; 65535],
-    // );
-    // let udp_tx_buffer = udp::PacketBuffer::new(
-    //     vec![udp::PacketMetadata::EMPTY, udp::PacketMetadata::EMPTY],
-    //     vec![0; 65535],
-    // );
-    // let udp_socket = udp::Socket::new(udp_rx_buffer, udp_tx_buffer);
+    // Create sockets
+    #[allow(unused)]
+    let udp_rx_buffer = udp::PacketBuffer::new(
+        vec![udp::PacketMetadata::EMPTY, udp::PacketMetadata::EMPTY],
+        vec![0; 65535],
+    );
+    #[allow(unused)]
+    let udp_tx_buffer = udp::PacketBuffer::new(
+        vec![udp::PacketMetadata::EMPTY, udp::PacketMetadata::EMPTY],
+        vec![0; 65535],
+    );
+    let udp_socket = udp::Socket::new(udp_rx_buffer, udp_tx_buffer);
 
-    // let tcp1_rx_buffer = tcp::SocketBuffer::new(vec![0; 64]);
-    // let tcp1_tx_buffer = tcp::SocketBuffer::new(vec![0; 128]);
-    // let tcp1_socket = tcp::Socket::new(tcp1_rx_buffer, tcp1_tx_buffer);
+    let tcp1_rx_buffer = tcp::SocketBuffer::new(vec![0; 64]);
+    let tcp1_tx_buffer = tcp::SocketBuffer::new(vec![0; 128]);
+    let tcp1_socket = tcp::Socket::new(tcp1_rx_buffer, tcp1_tx_buffer);
 
-    // let tcp2_rx_buffer = tcp::SocketBuffer::new(vec![0; 64]);
-    // let tcp2_tx_buffer = tcp::SocketBuffer::new(vec![0; 128]);
-    // let tcp2_socket = tcp::Socket::new(tcp2_rx_buffer, tcp2_tx_buffer);
+    let tcp2_rx_buffer = tcp::SocketBuffer::new(vec![0; 64]);
+    let tcp2_tx_buffer = tcp::SocketBuffer::new(vec![0; 128]);
+    let tcp2_socket = tcp::Socket::new(tcp2_rx_buffer, tcp2_tx_buffer);
 
-    // let tcp3_rx_buffer = tcp::SocketBuffer::new(vec![0; 65535]);
-    // let tcp3_tx_buffer = tcp::SocketBuffer::new(vec![0; 65535]);
-    // let tcp3_socket = tcp::Socket::new(tcp3_rx_buffer, tcp3_tx_buffer);
+    let tcp3_rx_buffer = tcp::SocketBuffer::new(vec![0; 65535]);
+    let tcp3_tx_buffer = tcp::SocketBuffer::new(vec![0; 65535]);
+    let tcp3_socket = tcp::Socket::new(tcp3_rx_buffer, tcp3_tx_buffer);
 
-    // let tcp4_rx_buffer = tcp::SocketBuffer::new(vec![0; 65535]);
-    // let tcp4_tx_buffer = tcp::SocketBuffer::new(vec![0; 65535]);
-    // let tcp4_socket = tcp::Socket::new(tcp4_rx_buffer, tcp4_tx_buffer);
+    let tcp4_rx_buffer = tcp::SocketBuffer::new(vec![0; 65535]);
+    let tcp4_tx_buffer = tcp::SocketBuffer::new(vec![0; 65535]);
+    let tcp4_socket = tcp::Socket::new(tcp4_rx_buffer, tcp4_tx_buffer);
 
     // let mut sockets = SocketSet::new(vec![]);
     // let udp_handle = sockets.add(udp_socket);

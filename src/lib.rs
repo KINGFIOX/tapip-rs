@@ -4,6 +4,8 @@ mod rand;
 
 pub mod iface;
 pub mod phy;
+pub mod socket;
+pub mod storage;
 pub mod time;
 pub mod wire;
 

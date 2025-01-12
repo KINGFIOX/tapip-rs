@@ -69,3 +69,27 @@ impl fmt::Display for Address {
         }
     }
 }
+
+/// An internet endpoint address.
+///
+/// `Endpoint` always fully specifies both the address and the port.
+///
+/// See also ['ListenEndpoint'], which allows not specifying the address
+/// in order to listen on a given port on any address.
+#[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+pub struct Endpoint {
+    pub addr: Address,
+    pub port: u16,
+}
+
+/// An internet endpoint address for listening.
+///
+/// In contrast with [`Endpoint`], `ListenEndpoint` allows not specifying the address,
+/// in order to listen on a given port at all our addresses.
+///
+/// An endpoint can be constructed from a port, in which case the address is unspecified.
+#[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Default)]
+pub struct ListenEndpoint {
+    pub addr: Option<Address>,
+    pub port: u16,
+}
