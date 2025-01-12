@@ -1,8 +1,34 @@
+/*! Communication between endpoints.
+
+The `socket` module deals with *network endpoints* and *buffering*.
+It provides interfaces for accessing buffers of data, and protocol state machines
+for filling and emptying these buffers.
+
+The programming interface implemented here differs greatly from the common Berkeley socket
+interface. Specifically, in the Berkeley interface the buffering is implicit:
+the operating system decides on the good size for a buffer and manages it.
+The interface implemented by this module uses explicit buffering: you decide on the good
+size for a buffer, allocate it, and let the networking stack use it.
+*/
+
+use crate::iface::Context;
 use crate::time::Instant;
 
 pub mod icmp;
-pub mod tcp;
-pub mod udp;
+pub mod raw;
+// pub mod tcp;
+// pub mod udp;
+
+/// Gives an indication on the next time the socket should be polled.
+#[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Clone, Copy)]
+pub(crate) enum PollAt {
+    /// The socket needs to be polled immediately.
+    Now,
+    /// The socket needs to be polled at given [Instant][struct.Instant].
+    Time(Instant),
+    /// The socket does not need to be polled unless there are external changes.
+    Ingress,
+}
 
 /// A network socket.
 ///
@@ -16,10 +42,21 @@ pub mod udp;
 /// [SocketSet::get]: struct.SocketSet.html#method.get
 #[derive(Debug)]
 pub enum Socket<'a> {
+    Raw(raw::Socket<'a>),
     Icmp(icmp::Socket<'a>),
-    // Raw(raw::Socket<'a>),
     // Udp(udp::Socket<'a>),
     // Tcp(tcp::Socket<'a>),
+}
+
+impl<'a> Socket<'a> {
+    pub(crate) fn poll_at(&self, cx: &mut Context) -> PollAt {
+        match self {
+            Socket::Raw(s) => s.poll_at(cx),
+            Socket::Icmp(s) => s.poll_at(cx),
+            // Socket::Udp(s) => s.poll_at(cx),
+            // Socket::Tcp(s) => s.poll_at(cx),
+        }
+    }
 }
 
 /// A conversion trait for network sockets.
@@ -31,17 +68,6 @@ pub trait AnySocket<'a> {
     fn downcast_mut<'c>(socket: &'c mut Socket<'a>) -> Option<&'c mut Self>
     where
         Self: Sized;
-}
-
-/// Gives an indication on the next time the socket should be polled.
-#[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Clone, Copy)]
-pub(crate) enum PollAt {
-    /// The socket needs to be polled immediately.
-    Now,
-    /// The socket needs to be polled at given [Instant][struct.Instant].
-    Time(Instant),
-    /// The socket does not need to be polled unless there are external changes.
-    Ingress,
 }
 
 macro_rules! from_socket {
@@ -70,4 +96,7 @@ macro_rules! from_socket {
     };
 }
 
+from_socket!(raw::Socket<'a>, Raw);
 from_socket!(icmp::Socket<'a>, Icmp);
+// from_socket!(udp::Socket<'a>, Udp);
+// from_socket!(tcp::Socket<'a>, Tcp);

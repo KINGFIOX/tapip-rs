@@ -1,3 +1,4 @@
+#[allow(unused)]
 pub const IFF_TUN: libc::c_int = 0x0001;
 pub const IFF_TAP: libc::c_int = 0x0002;
 pub const IFF_NO_PI: libc::c_int = 0x1000;

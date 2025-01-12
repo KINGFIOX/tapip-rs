@@ -1,13 +1,11 @@
+use super::*;
 use crate::{phy::Medium, wire::EthernetFrame};
 use std::io;
-use std::os::fd::{AsRawFd, RawFd};
-
-#[allow(unused_imports)]
-use super::*;
+use std::os::unix::io::{AsRawFd, RawFd};
 
 #[derive(Debug)]
 pub struct TunTapInterfaceDesc {
-    lower: libc::c_int, // file descriptor
+    lower: libc::c_int,
     mtu: usize,
 }
 
@@ -18,7 +16,6 @@ impl AsRawFd for TunTapInterfaceDesc {
 }
 
 impl TunTapInterfaceDesc {
-    #[allow(unused)]
     pub fn new(name: &str, medium: Medium) -> io::Result<TunTapInterfaceDesc> {
         let lower = unsafe {
             let lower = libc::open(
@@ -38,30 +35,23 @@ impl TunTapInterfaceDesc {
         Ok(TunTapInterfaceDesc { lower, mtu })
     }
 
-    #[allow(unused)]
     pub fn from_fd(fd: RawFd, mtu: usize) -> io::Result<TunTapInterfaceDesc> {
         Ok(TunTapInterfaceDesc { lower: fd, mtu })
-    }
-
-    #[allow(unused)]
-    pub fn interface_mtu(&self) -> io::Result<usize> {
-        Ok(self.mtu)
     }
 
     fn attach_interface_ifreq(
         lower: libc::c_int,
         medium: Medium,
-        ifr: &mut InterfaceRequest,
+        ifr: &mut IFReq,
     ) -> io::Result<()> {
         let mode = match medium {
-            Medium::Ip => imp::IFF_TUN,
             Medium::Ethernet => imp::IFF_TAP,
         };
         ifr.ifr_data = mode | imp::IFF_NO_PI;
         ifreq_ioctl(lower, ifr, imp::TUNSETIFF).map(|_| ())
     }
 
-    fn mtu_ifreq(medium: Medium, ifr: &mut InterfaceRequest) -> io::Result<usize> {
+    fn mtu_ifreq(medium: Medium, ifr: &mut IFReq) -> io::Result<usize> {
         let lower = unsafe {
             let lower = libc::socket(libc::AF_INET, libc::SOCK_DGRAM, libc::IPPROTO_IP);
             if lower == -1 {
@@ -82,14 +72,16 @@ impl TunTapInterfaceDesc {
         // SIOCGIFMTU returns the IP MTU (typically 1500 bytes.)
         // smoltcp counts the entire Ethernet packet in the MTU, so add the Ethernet header size to it.
         let mtu = match medium {
-            Medium::Ip => ip_mtu,
             Medium::Ethernet => ip_mtu + EthernetFrame::<&[u8]>::header_len(),
         };
 
         Ok(mtu)
     }
 
-    #[allow(unused)]
+    pub fn interface_mtu(&self) -> io::Result<usize> {
+        Ok(self.mtu)
+    }
+
     pub fn recv(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
         unsafe {
             let len = libc::read(
@@ -119,7 +111,6 @@ impl TunTapInterfaceDesc {
     }
 }
 
-/// RAII
 impl Drop for TunTapInterfaceDesc {
     fn drop(&mut self) {
         unsafe {

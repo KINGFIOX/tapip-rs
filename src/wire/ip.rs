@@ -540,10 +540,12 @@ pub fn pretty_print_ip_payload<T: Into<Repr>>(
     payload: &[u8],
 ) -> fmt::Result {
     use super::pretty_print::PrettyPrint;
+    #[allow(unused)]
     use crate::wire::ip::checksum::format_checksum;
     use crate::wire::Icmpv4Packet;
     // use crate::wire::{TcpPacket, TcpRepr, UdpPacket, UdpRepr};
 
+    #[allow(unused)]
     let checksum_caps = ChecksumCapabilities::ignored();
     let repr = ip_repr.into();
     match repr.next_header() {
