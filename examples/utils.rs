@@ -30,7 +30,7 @@ pub fn parse_tuntap_options(matches: &mut Matches) -> TunTapInterface {
     let tun = matches.opt_str("tun");
     let tap = matches.opt_str("tap");
     match (tun, tap) {
-        (Some(tun), None) => TunTapInterface::new(&tun, Medium::Ip).unwrap(),
+        (Some(_), None) => todo!(),
         (None, Some(tap)) => TunTapInterface::new(&tap, Medium::Ethernet).unwrap(),
         _ => panic!("You must specify exactly one of --tun or --tap"),
     }
