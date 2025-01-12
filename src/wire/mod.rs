@@ -121,14 +121,14 @@ pub use self::icmpv4::{
 mod icmp;
 pub use self::icmp::Repr as IcmpRepr;
 
-// mod udp;
-// pub use self::udp::{Packet as UdpPacket, Repr as UdpRepr, HEADER_LEN as UDP_HEADER_LEN};
+mod udp;
+pub use self::udp::{Packet as UdpPacket, Repr as UdpRepr, HEADER_LEN as UDP_HEADER_LEN};
 
-// mod tcp;
-// pub use self::tcp::{
-//     Control as TcpControl, Packet as TcpPacket, Repr as TcpRepr, SeqNumber as TcpSeqNumber,
-//     TcpOption, TcpTimestampGenerator, TcpTimestampRepr, HEADER_LEN as TCP_HEADER_LEN,
-// };
+mod tcp;
+pub use self::tcp::{
+    Control as TcpControl, Packet as TcpPacket, Repr as TcpRepr, SeqNumber as TcpSeqNumber,
+    TcpOption, TcpTimestampGenerator, TcpTimestampRepr, HEADER_LEN as TCP_HEADER_LEN,
+};
 
 /// Parsing a packet failed.
 ///
