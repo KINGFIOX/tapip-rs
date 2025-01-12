@@ -12,13 +12,11 @@ mod ipv4;
 use super::packet::*;
 
 use core::result::Result;
-use heapless::Vec;
 
 use super::fragmentation::{Fragmenter, FragmentsBuffer};
 
 use super::neighbor::{Answer as NeighborAnswer, Cache as NeighborCache};
 use super::socket_set::SocketSet;
-use crate::config::IFACE_MAX_ADDR_COUNT;
 use crate::iface::Routes;
 use crate::phy::PacketMeta;
 use crate::phy::{ChecksumCapabilities, Device, DeviceCapabilities, Medium, RxToken, TxToken};
@@ -104,7 +102,7 @@ pub struct InterfaceInner {
 
     neighbor_cache: NeighborCache,
     hardware_addr: HardwareAddress,
-    ip_addrs: Vec<IpCidr, IFACE_MAX_ADDR_COUNT>,
+    ip_addrs: Vec<IpCidr>,
     any_ip: bool,
     routes: Routes,
 }
@@ -231,7 +229,7 @@ impl Interface {
     ///
     /// # Panics
     /// This function panics if any of the addresses are not unicast.
-    pub fn update_ip_addrs<F: FnOnce(&mut Vec<IpCidr, IFACE_MAX_ADDR_COUNT>)>(&mut self, f: F) {
+    pub fn update_ip_addrs<F: FnOnce(&mut Vec<IpCidr>)>(&mut self, f: F) {
         f(&mut self.inner.ip_addrs);
         InterfaceInner::flush_neighbor_cache(&mut self.inner);
         InterfaceInner::check_ip_addrs(&self.inner.ip_addrs);

@@ -1,6 +1,3 @@
-use heapless::Vec;
-
-use crate::config::IFACE_MAX_ROUTE_COUNT;
 use crate::time::Instant;
 use crate::wire::{IpAddress, IpCidr};
 use crate::wire::{Ipv4Address, Ipv4Cidr};
@@ -44,7 +41,7 @@ impl Route {
 /// A routing table.
 #[derive(Debug)]
 pub struct Routes {
-    storage: Vec<Route, IFACE_MAX_ROUTE_COUNT>,
+    storage: Vec<Route>,
 }
 
 impl Routes {
@@ -56,7 +53,7 @@ impl Routes {
     }
 
     /// Update the routes of this node.
-    pub fn update<F: FnOnce(&mut Vec<Route, IFACE_MAX_ROUTE_COUNT>)>(&mut self, f: F) {
+    pub fn update<F: FnOnce(&mut Vec<Route>)>(&mut self, f: F) {
         f(&mut self.storage);
     }
 
@@ -68,9 +65,7 @@ impl Routes {
         gateway: Ipv4Address,
     ) -> Result<Option<Route>, RouteTableFull> {
         let old = self.remove_default_ipv4_route();
-        self.storage
-            .push(Route::new_ipv4_gateway(gateway))
-            .map_err(|_| RouteTableFull)?;
+        self.storage.push(Route::new_ipv4_gateway(gateway));
         Ok(old)
     }
 

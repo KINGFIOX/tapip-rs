@@ -112,9 +112,7 @@ fn main() {
 
     let mut iface = Interface::new(config, &mut device, Instant::now());
     iface.update_ip_addrs(|ip_addrs| {
-        ip_addrs
-            .push(IpCidr::new(IpAddress::v4(192, 168, 69, 1), 24))
-            .unwrap();
+        ip_addrs.push(IpCidr::new(IpAddress::v4(192, 168, 69, 1), 24));
     });
     iface
         .routes_mut()

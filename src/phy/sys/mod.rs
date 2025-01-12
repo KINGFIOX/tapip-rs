@@ -4,22 +4,18 @@ use crate::time::Duration;
 use std::os::unix::io::RawFd;
 use std::{io, mem, ptr};
 
-#[path = "linux.rs"]
-mod imp;
-
 pub mod tuntap_interface;
 
 pub use self::tuntap_interface::TunTapInterfaceDesc;
 
 /// Wait until given file descriptor becomes readable, but no longer than given timeout.
-#[allow(unused)]
 pub fn wait(fd: RawFd, duration: Option<Duration>) -> io::Result<()> {
     unsafe {
         let mut readfds = {
-            let mut readfds = mem::MaybeUninit::<libc::fd_set>::uninit();
-            libc::FD_ZERO(readfds.as_mut_ptr());
-            libc::FD_SET(fd, readfds.as_mut_ptr());
-            readfds.assume_init()
+            let mut readfds = mem::MaybeUninit::<libc::fd_set>::uninit(); // readfds <- fd_set
+            libc::FD_ZERO(readfds.as_mut_ptr()); // readfds <- {}
+            libc::FD_SET(fd, readfds.as_mut_ptr()); // readfds U= {fd}
+            readfds.assume_init() // declare that: readfds has been initialized
         };
 
         let mut writefds = {
@@ -28,6 +24,7 @@ pub fn wait(fd: RawFd, duration: Option<Duration>) -> io::Result<()> {
             writefds.assume_init()
         };
 
+        // exception fds
         let mut exceptfds = {
             let mut exceptfds = mem::MaybeUninit::<libc::fd_set>::uninit();
             libc::FD_ZERO(exceptfds.as_mut_ptr());
@@ -38,12 +35,13 @@ pub fn wait(fd: RawFd, duration: Option<Duration>) -> io::Result<()> {
             tv_sec: 0,
             tv_usec: 0,
         };
+        // set timeout
         let timeout_ptr = if let Some(duration) = duration {
             timeout.tv_sec = duration.secs() as libc::time_t;
             timeout.tv_usec = (duration.millis() * 1_000) as libc::suseconds_t;
             &mut timeout as *mut _
         } else {
-            ptr::null_mut()
+            ptr::null_mut() // NULL ptr
         };
 
         let res = libc::select(
@@ -58,37 +56,4 @@ pub fn wait(fd: RawFd, duration: Option<Duration>) -> io::Result<()> {
         }
         Ok(())
     }
-}
-
-#[repr(C)]
-#[derive(Debug)]
-struct IFReq {
-    ifr_name: [libc::c_char; libc::IF_NAMESIZE],
-    ifr_data: libc::c_int, /* ifr_ifindex or ifr_mtu */
-}
-
-fn ifreq_for(name: &str) -> IFReq {
-    let mut ifreq = IFReq {
-        ifr_name: [0; libc::IF_NAMESIZE],
-        ifr_data: 0,
-    };
-    for (i, byte) in name.as_bytes().iter().enumerate() {
-        ifreq.ifr_name[i] = *byte as libc::c_char
-    }
-    ifreq
-}
-
-fn ifreq_ioctl(
-    lower: libc::c_int,
-    ifreq: &mut IFReq,
-    cmd: libc::c_ulong,
-) -> io::Result<libc::c_int> {
-    unsafe {
-        let res = libc::ioctl(lower, cmd as _, ifreq as *mut IFReq);
-        if res == -1 {
-            return Err(io::Error::last_os_error());
-        }
-    }
-
-    Ok(ifreq.ifr_data)
 }

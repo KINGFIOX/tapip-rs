@@ -3,7 +3,9 @@
 {
 	"name": "Rust",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "tapip-rs",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
 	"runArgs": [
 		"--privileged"
 	],
@@ -13,7 +15,6 @@
 		"vscode": {
 			"extensions": [
 				"rust-lang.rust-analyzer",
-				"llvm-vs-code-extensions.vscode-clangd",
 				"ms-python.python"
 			]
 		}
