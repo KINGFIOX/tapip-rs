@@ -108,7 +108,6 @@ impl Controller for Cubic {
     }
 }
 
-#[inline]
 fn abs(a: f64) -> f64 {
     if a < 0.0 {
         -a

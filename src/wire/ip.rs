@@ -93,3 +93,21 @@ pub struct ListenEndpoint {
     pub addr: Option<Address>,
     pub port: u16,
 }
+
+enum_with_unknown! {
+    /// IP datagram encapsulated protocol.
+    pub enum Protocol(u8) {
+        HopByHop  = 0x00,
+        Icmp      = 0x01,
+        Igmp      = 0x02,
+        Tcp       = 0x06,
+        Udp       = 0x11,
+        Ipv6Route = 0x2b,
+        Ipv6Frag  = 0x2c,
+        IpSecEsp  = 0x32,
+        IpSecAh   = 0x33,
+        Icmpv6    = 0x3a,
+        Ipv6NoNxt = 0x3b,
+        Ipv6Opts  = 0x3c
+    }
+}

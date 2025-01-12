@@ -1,24 +1,37 @@
+mod arp;
 mod ethernet;
+mod icmpv4;
+mod tcp;
 
 pub(crate) mod ip;
 pub(crate) mod ipv4;
 
-mod tcp;
-
 use crate::phy::Medium;
 
-pub use self::ethernet::Address as EthernetAddress;
 pub use self::ethernet::Frame as EthernetFrame;
+pub use self::ethernet::{Address as EthernetAddress, EtherType as EthernetProtocol};
 
+pub use self::icmpv4::Repr as Icmpv4Repr;
 pub(crate) use self::ipv4::AddressExt as Ipv4AddressExt;
-pub use self::ipv4::{Address as Ipv4Address, Cidr as Ipv4Cidr};
+pub use self::ipv4::{
+    Address as Ipv4Address, Cidr as Ipv4Cidr, Packet as Ipv4Packet, Repr as Ipv4Repr,
+};
 
 pub use self::ip::{
     Address as IpAddress, Cidr as IpCidr, Endpoint as IpEndpoint,
-    ListenEndpoint as IpListenEndpoint,
+    ListenEndpoint as IpListenEndpoint, Protocol as IpProtocol,
 };
 
+pub use self::arp::{Operation as ArpOperation, Packet as ArpPacket, Repr as ArpRepr};
+
 pub use self::tcp::SeqNumber as TcpSeqNumber;
+
+/// Parsing a packet failed.
+///
+/// Either it is malformed, or it is not supported by smoltcp.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Error;
+pub type Result<T> = core::result::Result<T, Error>;
 
 mod field {
     pub type Field = ::core::ops::Range<usize>;

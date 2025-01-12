@@ -16,9 +16,7 @@ pub enum Medium {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Default)]
 #[non_exhaustive]
-pub struct PacketMeta {
-    pub id: u32,
-}
+pub struct PacketMeta {}
 
 /// A token to receive a single network packet.
 pub trait RxToken {
